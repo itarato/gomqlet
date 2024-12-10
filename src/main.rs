@@ -1,5 +1,6 @@
 use std::{
     cell::RefCell,
+    collections::HashMap,
     io::{self, Read, Write},
     os::fd::AsRawFd,
     rc::Rc,
@@ -20,13 +21,6 @@ mod printer;
 mod terminal_handler;
 mod text;
 mod util;
-
-/**
- * Up:    27 91 65
- * Down:  27 91 66
- * Right: 27 91 67
- * Left:  27 91 68
- */
 
 struct Gomqlet {
     terminal_handler: TerminalHandler,
@@ -55,11 +49,26 @@ impl Gomqlet {
         TerminalHandler::set_cursor_location(0, 0);
         stdout.flush()?;
 
+        /*
+         * Up:    27 91 65
+         * Down:  27 91 66
+         * Right: 27 91 67
+         * Left:  27 91 68
+         */
+        let escape_combos: HashMap<Vec<u8>, EditorInput> = HashMap::from([
+            (vec![91, 65], EditorInput::Up),
+            (vec![91, 66], EditorInput::Down),
+            (vec![91, 67], EditorInput::Right),
+            (vec![91, 68], EditorInput::Left),
+        ]);
+
         loop {
             let read_len = stdin.read(&mut buf)?;
             if read_len == 0 {
                 continue;
             }
+
+            if buf[0] == 27 {}
 
             // CTRL + C       CTRL + D
             if buf[0] == 3 || buf[0] == 4 {

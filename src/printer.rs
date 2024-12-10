@@ -1,7 +1,6 @@
 use std::{
     cell::RefCell,
     io::{self, Write},
-    process::Output,
     rc::Rc,
 };
 

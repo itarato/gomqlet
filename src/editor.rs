@@ -4,6 +4,10 @@ use crate::text::Text;
 
 pub enum EditorInput {
     Char(u8),
+    Left,
+    Right,
+    Up,
+    Down,
 }
 
 pub struct Editor {
