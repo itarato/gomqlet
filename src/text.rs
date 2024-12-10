@@ -13,7 +13,13 @@ impl Text {
         }
     }
 
-    pub fn insert_char(&mut self, ch: char) {
+    pub fn insert_new_line(&mut self) {
+        self.lines.push(String::new());
+        self.cursor.x = 0;
+        self.cursor.y += 1;
+    }
+
+    pub fn insert_visible_char(&mut self, ch: char) {
         self.lines
             .get_mut(self.cursor.y)
             .expect("Missing line")
@@ -22,12 +28,27 @@ impl Text {
         self.cursor.x += 1;
     }
 
-    pub fn erase_char(&mut self) {
-        self.lines
-            .get_mut(self.cursor.y)
-            .expect("Missing line")
-            .remove(self.cursor.x - 1);
+    pub fn backspace(&mut self) {
+        if self.cursor.x > 0 {
+            self.lines
+                .get_mut(self.cursor.y)
+                .expect("Missing line")
+                .remove(self.cursor.x - 1);
 
-        self.cursor.x -= 1;
+            self.cursor.x -= 1;
+        } else {
+            if self.cursor.y > 0 {
+                let current_line_content = self.lines[self.cursor.y].clone();
+                self.lines
+                    .get_mut(self.cursor.y - 1)
+                    .expect("Missing line")
+                    .push_str(&current_line_content);
+                self.lines.remove(self.cursor.y);
+                self.cursor.y -= 1;
+                self.cursor.x = self.lines[self.cursor.y].len();
+            } else {
+                // Noop.
+            }
+        }
     }
 }

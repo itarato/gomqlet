@@ -17,8 +17,9 @@ impl Editor {
 
     pub fn parse_input(&mut self, input: EditorInput) {
         match input {
-            EditorInput::Char(127) => self.content.borrow_mut().erase_char(),
-            EditorInput::Char(ch) => self.content.borrow_mut().insert_char(ch as char),
+            EditorInput::Char(127) => self.content.borrow_mut().backspace(),
+            EditorInput::Char(13) => self.content.borrow_mut().insert_new_line(),
+            EditorInput::Char(ch) => self.content.borrow_mut().insert_visible_char(ch as char),
         }
     }
 }

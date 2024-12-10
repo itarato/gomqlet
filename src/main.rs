@@ -10,13 +10,23 @@ use printer::Printer;
 use terminal_handler::TerminalHandler;
 use text::Text;
 
+extern crate pretty_env_logger;
 extern crate termios;
+#[macro_use]
+extern crate log;
 
 mod editor;
 mod printer;
 mod terminal_handler;
 mod text;
 mod util;
+
+/**
+ * Up:    27 91 65
+ * Down:  27 91 66
+ * Right: 27 91 67
+ * Left:  27 91 68
+ */
 
 struct Gomqlet {
     terminal_handler: TerminalHandler,
@@ -42,6 +52,7 @@ impl Gomqlet {
         let mut buf: [u8; 1] = [0; 1];
 
         TerminalHandler::clear_screen()?;
+        TerminalHandler::set_cursor_location(0, 0);
         stdout.flush()?;
 
         loop {
@@ -50,15 +61,15 @@ impl Gomqlet {
                 continue;
             }
 
-            if buf[0] == 27 {
+            // CTRL + C       CTRL + D
+            if buf[0] == 3 || buf[0] == 4 {
                 return Ok(());
             }
 
             self.editor.parse_input(EditorInput::Char(buf[0]));
             self.printer.print();
 
-            // print!("{} ", buf[0]);
-            // stdout.flush()?;
+            debug!("Key hit: {}", buf[0]);
         }
     }
 }
@@ -72,6 +83,10 @@ impl Drop for Gomqlet {
 }
 
 fn main() -> io::Result<()> {
+    pretty_env_logger::init();
+
+    info!("Gomqlet start");
+
     let mut gomqlet = Gomqlet::new()?;
     gomqlet.exec_loop()?;
 

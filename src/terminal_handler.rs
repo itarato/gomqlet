@@ -54,12 +54,24 @@ impl TerminalHandler {
         io::stdout().write_all(b"\x1b[2J")
     }
 
+    pub fn set_cursor_location(row: usize, col: usize) {
+        print!("\x1b[{};{}H", row + 1, col + 1);
+    }
+
     pub fn append_cursor_location(out: &mut String, row: usize, col: usize) {
-        let cmd = format!("\x1b[{};{}H", row + 1, col + 1);
+        let cmd = format!("\x1b[{};{}H", col + 1, row + 1);
         out.push_str(cmd.as_str());
     }
 
     pub fn append_clear_screen(out: &mut String) {
         out.push_str("\x1b[2J");
+    }
+
+    pub fn append_hide_cursor(out: &mut String) {
+        out.push_str("\x1b[?25l");
+    }
+
+    pub fn append_show_cursor(out: &mut String) {
+        out.push_str("\x1b[?25h");
     }
 }

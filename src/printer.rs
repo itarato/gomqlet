@@ -18,6 +18,7 @@ impl Printer {
 
     pub fn print(&self) {
         let mut buf: String = String::new();
+        TerminalHandler::append_hide_cursor(&mut buf);
         TerminalHandler::append_clear_screen(&mut buf);
         TerminalHandler::append_cursor_location(&mut buf, 0, 0);
 
@@ -27,15 +28,16 @@ impl Printer {
             buf.push_str("\n\r");
         }
 
+        TerminalHandler::append_cursor_location(
+            &mut buf,
+            self.content.borrow().cursor.x,
+            self.content.borrow().cursor.y,
+        );
+        TerminalHandler::append_show_cursor(&mut buf);
+
         io::stdout()
             .write_all(buf.as_bytes())
             .expect("Failed writing output");
-
-        TerminalHandler::append_cursor_location(
-            &mut buf, 3,
-            0, // self.content.borrow().cursor.x,
-              // self.content.borrow().cursor.y,
-        );
 
         io::stdout().flush().expect("Cannot flush STDOUT");
     }
