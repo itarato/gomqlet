@@ -1,5 +1,7 @@
 use crate::util::CoordUsize;
 
+const TAB_SIZE: usize = 2;
+
 pub struct Text {
     pub lines: Vec<String>,
     pub cursor: CoordUsize,
@@ -26,6 +28,13 @@ impl Text {
             .insert(self.cursor.x, ch);
 
         self.cursor.x += 1;
+    }
+
+    pub fn insert_tab(&mut self) {
+        let remaining_spaces = TAB_SIZE - (self.cursor.x % TAB_SIZE);
+        for _ in 0..remaining_spaces {
+            self.insert_visible_char(' ');
+        }
     }
 
     pub fn backspace(&mut self) {
