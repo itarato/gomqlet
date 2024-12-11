@@ -20,6 +20,7 @@ mod editor;
 mod printer;
 mod terminal_handler;
 mod text;
+mod tokenizer;
 mod util;
 
 #[derive(Clone)]
