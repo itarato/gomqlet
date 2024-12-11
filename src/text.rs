@@ -16,7 +16,14 @@ impl Text {
     }
 
     pub fn insert_new_line(&mut self) {
-        self.lines.push(String::new());
+        let fragment_to_split = self.lines[self.cursor.y][self.cursor.x..].to_owned();
+        self.lines
+            .get_mut(self.cursor.y)
+            .expect("Missing line")
+            .truncate(self.cursor.x);
+
+        self.lines.insert(self.cursor.y + 1, fragment_to_split);
+
         self.cursor.x = 0;
         self.cursor.y += 1;
     }
@@ -47,6 +54,8 @@ impl Text {
             self.cursor.x -= 1;
         } else {
             if self.cursor.y > 0 {
+                let prev_line_len = self.lines[self.cursor.y - 1].len();
+
                 let current_line_content = self.lines[self.cursor.y].clone();
                 self.lines
                     .get_mut(self.cursor.y - 1)
@@ -54,7 +63,7 @@ impl Text {
                     .push_str(&current_line_content);
                 self.lines.remove(self.cursor.y);
                 self.cursor.y -= 1;
-                self.cursor.x = self.lines[self.cursor.y].len();
+                self.cursor.x = prev_line_len;
             } else {
                 // Noop.
             }
