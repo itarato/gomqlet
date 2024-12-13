@@ -9,6 +9,7 @@ enum Token {
     Colon,
     IntNumber(i32),
     Keyword(String),
+    Str(String),
 }
 
 pub struct Tokenizer;
@@ -50,6 +51,9 @@ impl Tokenizer {
                 '0'..='9' => {
                     tokens.push(Tokenizer::consume_number(&mut source_iter));
                 }
+                '"' => {
+                    tokens.push(Tokenizer::consume_string(&mut source_iter));
+                }
                 _ => unimplemented!(),
             }
         }
@@ -85,6 +89,22 @@ impl Tokenizer {
         }
 
         Token::IntNumber(i32::from_str_radix(&fragment, 10).expect("Invalid number"))
+    }
+
+    fn consume_string(source_iter: &mut Peekable<Chars<'_>>) -> Token {
+        let mut fragment = String::new();
+
+        source_iter.next().unwrap();
+
+        while let Some(ch) = source_iter.next() {
+            if ch == '"' {
+                break;
+            }
+
+            fragment.push(ch);
+        }
+
+        Token::Str(fragment)
     }
 }
 
@@ -136,6 +156,20 @@ mod test {
         assert_eq!(Token::Keyword("first".into()), tokens[3]);
         assert_eq!(Token::Colon, tokens[4]);
         assert_eq!(Token::IntNumber(1), tokens[5]);
+        assert_eq!(Token::CloseParen, tokens[6]);
+        assert_eq!(Token::CloseBrace, tokens[7]);
+    }
+
+    #[test]
+    fn test_string() {
+        let tokens = Tokenizer::tokenize("{ user(id: \"gid://user/1\") }");
+        assert_eq!(8, tokens.len());
+        assert_eq!(Token::OpenBrace, tokens[0]);
+        assert_eq!(Token::Keyword("user".into()), tokens[1]);
+        assert_eq!(Token::OpenParen, tokens[2]);
+        assert_eq!(Token::Keyword("id".into()), tokens[3]);
+        assert_eq!(Token::Colon, tokens[4]);
+        assert_eq!(Token::Str("gid://user/1".into()), tokens[5]);
         assert_eq!(Token::CloseParen, tokens[6]);
         assert_eq!(Token::CloseBrace, tokens[7]);
     }
