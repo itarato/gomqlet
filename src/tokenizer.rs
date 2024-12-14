@@ -1,7 +1,19 @@
 use std::{iter::Peekable, str::Chars};
 
+struct Token {
+    kind: TokenKind,
+    pos: usize,
+    len: usize,
+}
+
+impl Token {
+    fn new(kind: TokenKind, pos: usize, len: usize) -> Token {
+        Token { kind, pos, len }
+    }
+}
+
 #[derive(PartialEq, Eq, Debug)]
-enum Token {
+enum TokenKind {
     OpenBrace,
     CloseBrace,
     OpenParen,
@@ -18,43 +30,47 @@ impl Tokenizer {
     pub fn tokenize(source: &str) -> Vec<Token> {
         let mut tokens = vec![];
 
-        let mut source_iter = source.chars().peekable();
+        let chars = source.chars().collect::<Vec<_>>();
+        let mut pos = 0usize;
 
-        while let Some(next_ch) = source_iter.peek() {
-            match *next_ch {
+        while pos < chars.len() {
+            match chars[pos] {
                 '{' => {
-                    tokens.push(Token::OpenBrace);
-                    source_iter.next().expect("Bad iteration");
+                    tokens.push(Token::new(TokenKind::OpenBrace, pos, 1));
+                    pos += 1;
                 }
                 '}' => {
-                    tokens.push(Token::CloseBrace);
-                    source_iter.next().expect("Bad iteration");
+                    tokens.push(Token::new(TokenKind::CloseBrace, pos, 1));
+                    pos += 1;
                 }
                 '(' => {
-                    tokens.push(Token::OpenParen);
-                    source_iter.next().expect("Bad iteration");
+                    tokens.push(Token::new(TokenKind::OpenParen, pos, 1));
+                    pos += 1;
                 }
                 ')' => {
-                    tokens.push(Token::CloseParen);
-                    source_iter.next().expect("Bad iteration");
+                    tokens.push(Token::new(TokenKind::CloseParen, pos, 1));
+                    pos += 1;
                 }
                 ':' => {
-                    tokens.push(Token::Colon);
-                    source_iter.next().expect("Bad iteration");
+                    tokens.push(Token::new(TokenKind::Colon, pos, 1));
+                    pos += 1;
                 }
                 'a'..='z' => {
-                    tokens.push(Tokenizer::consume_keyword(&mut source_iter));
+                    tokens.push(Tokenizer::consume_keyword(chars, &mut pos));
                 }
                 ' ' | '\t' | '\r' | '\n' => {
-                    source_iter.next().expect("Bad iteration");
+                    pos += 1;
                 }
                 '0'..='9' => {
-                    tokens.push(Tokenizer::consume_number(&mut source_iter));
+                    tokens.push(Tokenizer::consume_number(chars, &mut pos));
                 }
                 '"' => {
-                    tokens.push(Tokenizer::consume_string(&mut source_iter));
+                    tokens.push(Tokenizer::consume_string(chars, &mut pos));
                 }
-                _ => unimplemented!(),
+                _ => {
+                    error!("Tokenizer error: unexpected char: {}", chars[pos]);
+                    pos += 1;
+                }
             }
         }
 
