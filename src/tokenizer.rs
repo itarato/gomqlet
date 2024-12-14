@@ -1,5 +1,6 @@
 use std::{iter::Peekable, str::Chars};
 
+#[derive(Debug, PartialEq, Eq)]
 struct Token {
     kind: TokenKind,
     pos: usize,
@@ -143,7 +144,7 @@ impl Tokenizer {
 
 #[cfg(test)]
 mod test {
-    use crate::tokenizer::TokenKind;
+    use crate::tokenizer::{Token, TokenKind};
 
     use super::Tokenizer;
 
@@ -205,5 +206,17 @@ mod test {
         assert_eq!(TokenKind::Str("gid://user/1".into()), tokens[5].kind);
         assert_eq!(TokenKind::CloseParen, tokens[6].kind);
         assert_eq!(TokenKind::CloseBrace, tokens[7].kind);
+    }
+
+    #[test]
+    fn test_pos() {
+        let tokens = Tokenizer::tokenize("   { \"hello\"\t123\n\n}");
+
+        assert_eq!(4, tokens.len());
+
+        assert_eq!(Token::new(TokenKind::OpenBrace, 3, 1), tokens[0]);
+        assert_eq!(Token::new(TokenKind::Str("hello".into()), 5, 7), tokens[1]);
+        assert_eq!(Token::new(TokenKind::IntNumber(123), 13, 3), tokens[2]);
+        assert_eq!(Token::new(TokenKind::CloseBrace, 18, 1), tokens[3]);
     }
 }
