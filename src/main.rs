@@ -42,7 +42,7 @@ struct Gomqlet {
 
 impl Gomqlet {
     fn new() -> io::Result<Gomqlet> {
-        let terminal_handler = TerminalHandler::try_new()?;
+        let terminal_handler = TerminalHandler::new();
         let content = Rc::new(RefCell::new(Text::new()));
         Ok(Gomqlet {
             terminal_handler,

@@ -13,20 +13,19 @@ pub struct TerminalHandler {
 }
 
 impl TerminalHandler {
-    pub fn try_new() -> io::Result<TerminalHandler> {
+    pub fn new() -> TerminalHandler {
         let fd = io::stdin().as_raw_fd();
-        dbg!(fd);
-        let mut original_termios = Termios::from_fd(fd)?;
+        let mut original_termios = Termios::from_fd(fd).expect("Failed getting STDIN id");
 
-        tcgetattr(fd, &mut original_termios)?;
-        TerminalHandler::terminal_enable_raw_mode(original_termios.clone())?;
+        tcgetattr(fd, &mut original_termios).expect("Failed getting termios config");
+        TerminalHandler::terminal_enable_raw_mode(original_termios.clone())
+            .expect("Failed setting up raw mode");
 
-        Ok(TerminalHandler { original_termios })
+        TerminalHandler { original_termios }
     }
 
     pub fn terminal_enable_raw_mode(mut termios: Termios) -> io::Result<()> {
         let fd = io::stdin().as_raw_fd();
-        dbg!(fd);
 
         termios.c_iflag &= !(IXON | ICRNL | BRKINT | INPCK | ISTRIP);
         termios.c_oflag &= !(OPOST);
