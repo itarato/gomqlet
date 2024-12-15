@@ -62,18 +62,12 @@ impl Printer {
             .map(|tokens| {
                 tokens
                     .into_iter()
-                    .map(|token| match token.kind {
-                        TokenKind::OpenBrace | TokenKind::CloseBrace => {
-                            format!("\x1B[92m{}\x1B[0m", token.original)
-                        }
-                        TokenKind::OpenParen | TokenKind::CloseParen => {
-                            format!("\x1B[96m{}\x1B[0m", token.original)
-                        }
-                        TokenKind::Colon => format!("\x1B[97m{}\x1B[0m", token.original),
-                        TokenKind::Keyword(_) => format!("\x1B[93m{}\x1B[0m", token.original),
-                        TokenKind::IntNumber(_) => format!("\x1B[95m{}\x1B[0m", token.original),
-                        TokenKind::Str(_) => format!("\x1B[94m{}\x1B[0m", token.original),
-                        _ => token.original,
+                    .map(|token| {
+                        format!(
+                            "\x1B[{}m{}\x1B[0m",
+                            token.kind.vt100_color_code(),
+                            token.original
+                        )
                     })
                     .collect::<Vec<String>>()
                     .join("")

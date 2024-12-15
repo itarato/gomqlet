@@ -30,6 +30,20 @@ pub enum TokenKind {
     Whitespace(String),
 }
 
+impl TokenKind {
+    pub fn vt100_color_code(&self) -> u8 {
+        match self {
+            TokenKind::CloseBrace | TokenKind::OpenBrace => 92,
+            TokenKind::CloseParen | TokenKind::OpenParen => 96,
+            TokenKind::Colon => 97,
+            TokenKind::Keyword(_) => 93,
+            TokenKind::IntNumber(_) => 95,
+            TokenKind::Str(_) => 94,
+            _ => 0,
+        }
+    }
+}
+
 pub struct Tokenizer;
 
 impl Tokenizer {
