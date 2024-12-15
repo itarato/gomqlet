@@ -16,7 +16,9 @@ extern crate termios;
 #[macro_use]
 extern crate log;
 
+mod ast;
 mod editor;
+mod parser;
 mod printer;
 mod terminal_handler;
 mod text;
