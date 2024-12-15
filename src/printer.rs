@@ -7,7 +7,7 @@ use std::{
 use crate::{
     terminal_handler::TerminalHandler,
     text::Text,
-    tokenizer::{Token, Tokenizer},
+    tokenizer::{Token, TokenKind, Tokenizer},
 };
 
 pub struct Printer {
@@ -25,9 +25,10 @@ impl Printer {
         TerminalHandler::append_clear_screen(&mut buf);
         TerminalHandler::append_cursor_location(&mut buf, 0, 0);
 
-        let lines_len = self.content.borrow().lines.len();
+        let lines = self.lines_with_coloring();
+        let lines_len = lines.len();
         for i in 0..lines_len {
-            buf.push_str(self.content.borrow().lines[i].as_str());
+            buf.push_str(lines[i].as_str());
             buf.push_str("\n\r");
         }
 
@@ -55,30 +56,28 @@ impl Printer {
             .collect()
     }
 
-    fn add_coloring(&self) -> Vec<String> {
-        let mut lines = self.content.borrow().lines.clone();
-        // let tokens = self.build_tokens();
-
-        // let mut offset = 0usize;
-        // let mut current_line = 0usize;
-        // let mut current_line_start = 0usize;
-
-        // for token in tokens {
-        //     let pos_start = token.pos;
-
-        //     // Find start position's line.
-        //     while current_line_start + lines[current_line].len() <= pos_start {
-        //         current_line_start += lines[current_line].len();
-        //         current_line += 1;
-        //         offset = 0;
-        //     }
-
-        //     let line_rel_pos = pos_start - current_line_start;
-        //     let color_tag = format!("<color>");
-
-        //     lines[current_line].insert_str(line_rel_pos + offset, &color_tag);
-        // }
-
-        lines
+    fn lines_with_coloring(&self) -> Vec<String> {
+        self.build_tokens()
+            .into_iter()
+            .map(|tokens| {
+                tokens
+                    .into_iter()
+                    .map(|token| match token.kind {
+                        TokenKind::OpenBrace | TokenKind::CloseBrace => {
+                            format!("\x1B[92m{}\x1B[0m", token.original)
+                        }
+                        TokenKind::OpenParen | TokenKind::CloseParen => {
+                            format!("\x1B[96m{}\x1B[0m", token.original)
+                        }
+                        TokenKind::Colon => format!("\x1B[97m{}\x1B[0m", token.original),
+                        TokenKind::Keyword(_) => format!("\x1B[93m{}\x1B[0m", token.original),
+                        TokenKind::IntNumber(_) => format!("\x1B[95m{}\x1B[0m", token.original),
+                        TokenKind::Str(_) => format!("\x1B[94m{}\x1B[0m", token.original),
+                        _ => token.original,
+                    })
+                    .collect::<Vec<String>>()
+                    .join("")
+            })
+            .collect::<Vec<String>>()
     }
 }

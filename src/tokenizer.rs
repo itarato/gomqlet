@@ -101,9 +101,10 @@ impl Tokenizer {
         let fragment_len = fragment.len();
 
         Token::new(
-            TokenKind::Keyword(fragment),
+            TokenKind::Keyword(fragment.clone()),
             *pos - fragment_len,
             fragment_len,
+            fragment,
         )
     }
 
@@ -122,9 +123,10 @@ impl Tokenizer {
         let fragment_len = fragment.len();
 
         Token::new(
-            TokenKind::Whitespace(fragment),
+            TokenKind::Whitespace(fragment.clone()),
             *pos - fragment_len,
             fragment_len,
+            fragment,
         )
     }
 
@@ -144,6 +146,7 @@ impl Tokenizer {
             TokenKind::IntNumber(i32::from_str_radix(&fragment, 10).expect("Invalid number")),
             *pos - fragment.len(),
             fragment.len(),
+            fragment,
         )
     }
 
@@ -165,9 +168,10 @@ impl Tokenizer {
         let fragment_len = fragment.len();
 
         Token::new(
-            TokenKind::Str(fragment),
+            TokenKind::Str(fragment.clone()),
             *pos - fragment_len - 2,
             fragment_len + 2,
+            format!("\"{}\"", fragment),
         )
     }
 }
@@ -244,9 +248,21 @@ mod test {
 
         assert_eq!(4, tokens.len());
 
-        assert_eq!(Token::new(TokenKind::OpenBrace, 3, 1), tokens[0]);
-        assert_eq!(Token::new(TokenKind::Str("hello".into()), 5, 7), tokens[1]);
-        assert_eq!(Token::new(TokenKind::IntNumber(123), 13, 3), tokens[2]);
-        assert_eq!(Token::new(TokenKind::CloseBrace, 18, 1), tokens[3]);
+        assert_eq!(
+            Token::new(TokenKind::OpenBrace, 3, 1, "{".into()),
+            tokens[0]
+        );
+        assert_eq!(
+            Token::new(TokenKind::Str("hello".into()), 5, 7, "\"hello\"".into()),
+            tokens[1]
+        );
+        assert_eq!(
+            Token::new(TokenKind::IntNumber(123), 13, 3, "123".into()),
+            tokens[2]
+        );
+        assert_eq!(
+            Token::new(TokenKind::CloseBrace, 18, 1, "}".into()),
+            tokens[3]
+        );
     }
 }
