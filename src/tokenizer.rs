@@ -3,11 +3,17 @@ pub struct Token {
     pub kind: TokenKind,
     pub pos: usize,
     pub len: usize,
+    pub original: String,
 }
 
 impl Token {
-    fn new(kind: TokenKind, pos: usize, len: usize) -> Token {
-        Token { kind, pos, len }
+    fn new(kind: TokenKind, pos: usize, len: usize, original: String) -> Token {
+        Token {
+            kind,
+            pos,
+            len,
+            original,
+        }
     }
 }
 
@@ -36,23 +42,23 @@ impl Tokenizer {
         while pos < chars.len() {
             match chars[pos] {
                 '{' => {
-                    tokens.push(Token::new(TokenKind::OpenBrace, pos, 1));
+                    tokens.push(Token::new(TokenKind::OpenBrace, pos, 1, "{".into()));
                     pos += 1;
                 }
                 '}' => {
-                    tokens.push(Token::new(TokenKind::CloseBrace, pos, 1));
+                    tokens.push(Token::new(TokenKind::CloseBrace, pos, 1, "}".into()));
                     pos += 1;
                 }
                 '(' => {
-                    tokens.push(Token::new(TokenKind::OpenParen, pos, 1));
+                    tokens.push(Token::new(TokenKind::OpenParen, pos, 1, "(".into()));
                     pos += 1;
                 }
                 ')' => {
-                    tokens.push(Token::new(TokenKind::CloseParen, pos, 1));
+                    tokens.push(Token::new(TokenKind::CloseParen, pos, 1, ")".into()));
                     pos += 1;
                 }
                 ':' => {
-                    tokens.push(Token::new(TokenKind::Colon, pos, 1));
+                    tokens.push(Token::new(TokenKind::Colon, pos, 1, ":".into()));
                     pos += 1;
                 }
                 'a'..='z' => {
