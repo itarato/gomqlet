@@ -7,8 +7,9 @@ pub struct Query {
 }
 
 pub struct Field {
-    args: Option<ArgList>,
-    fields: Vec<Field>,
+    pub name: String,
+    pub arglist: Option<ArgList>,
+    pub fields: Vec<Field>,
 }
 
 pub struct ArgList {
