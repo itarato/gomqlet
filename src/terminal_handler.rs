@@ -35,7 +35,8 @@ impl TerminalHandler {
         termios.c_cc[VMIN] = 0;
         termios.c_cc[VTIME] = 1;
 
-        tcsetattr(fd, TCIOFLUSH, &termios)?;
+        tcsetattr(fd, TCSANOW, &termios)?;
+        tcflush(fd, TCIOFLUSH)?;
 
         Ok(())
     }
