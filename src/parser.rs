@@ -1,6 +1,7 @@
 use crate::ast;
 use crate::tokenizer::{Token, TokenKind};
 
+#[derive(Debug)]
 pub enum ParseErrorScope {
     Root,
     Query,
@@ -8,6 +9,7 @@ pub enum ParseErrorScope {
     Field,
 }
 
+#[derive(Debug)]
 pub struct ParseError {
     token: Option<Token>,
     scope: ParseErrorScope,
@@ -24,10 +26,8 @@ impl Parser {
         Parser { tokens, ptr: 0 }
     }
 
-    pub fn parse(self) -> Vec<ast::Root> {
-        let mut roots = vec![];
-
-        roots
+    pub fn parse(mut self) -> Result<ast::Root, ParseError> {
+        Ok(ast::Root::Query(self.parse_query()?))
     }
 
     fn parse_query(&mut self) -> Result<ast::Query, ParseError> {
@@ -133,18 +133,24 @@ impl Parser {
 mod test {
     use crate::{ast::Root, tokenizer::Tokenizer};
 
-    use super::Parser;
+    use super::{ParseError, Parser};
 
     #[test]
     fn test_empty() {
-        let ast = parse("{}");
-        assert_eq!(0, ast.len());
+        let Root::Query(query) = parse("{}").unwrap();
+        assert_eq!(0, query.fields.len());
     }
 
     #[test]
-    fn test_plan_fields() {}
+    fn test_plan_fields() {
+        let Root::Query(ast) = parse("{ user company task }").unwrap();
+        assert_eq!(3, ast.fields.len());
+        assert_eq!("user".to_string(), ast.fields[0].name);
+        assert_eq!("company".to_string(), ast.fields[1].name);
+        assert_eq!("task".to_string(), ast.fields[2].name);
+    }
 
-    fn parse(raw: &str) -> Vec<Root> {
+    fn parse(raw: &str) -> Result<Root, ParseError> {
         let tokens = Tokenizer::tokenize(raw, false);
         let parser = Parser::new(tokens);
         parser.parse()
