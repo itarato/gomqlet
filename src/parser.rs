@@ -27,10 +27,20 @@ impl Parser {
     }
 
     pub fn parse(mut self) -> Result<ast::Root, ParseError> {
+        if self.is_next_keyword("mutation") {
+            todo!("Handle mutation");
+        }
+
         Ok(ast::Root::Query(self.parse_query()?))
     }
 
     fn parse_query(&mut self) -> Result<ast::Query, ParseError> {
+        if self.is_next_keyword("query") {
+            self.ptr += 1;
+        }
+
+        // TODO variables.
+
         let fields = self.parse_fields_subobject()?;
 
         Ok(ast::Query { fields })
@@ -129,6 +139,20 @@ impl Parser {
     fn peek_token_cloned(&self) -> Option<Token> {
         self.peek_token().map(|token| token.clone())
     }
+
+    fn is_next_keyword(&self, value: &str) -> bool {
+        if let Some(Token {
+            kind: TokenKind::Keyword(keyword),
+            ..
+        }) = self.peek_token()
+        {
+            if keyword == value {
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 #[cfg(test)]
@@ -141,6 +165,12 @@ mod test {
     fn test_empty() {
         let Root::Query(query) = parse("{}").unwrap();
         assert_eq!(0, query.fields.len());
+    }
+
+    #[test]
+    fn test_optional_query_keywors() {
+        let Root::Query(query) = parse("query { user }").unwrap();
+        assert_eq!(1, query.fields.len());
     }
 
     #[test]
