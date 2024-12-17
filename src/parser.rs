@@ -31,39 +31,7 @@ impl Parser {
     }
 
     fn parse_query(&mut self) -> Result<ast::Query, ParseError> {
-        if let Some(Token {
-            kind: TokenKind::OpenBrace,
-            ..
-        }) = self.peek_token()
-        {
-            // Noop.
-        } else {
-            return Err(ParseError {
-                token: self.peek_token_cloned(),
-                scope: ParseErrorScope::Query,
-                message: "Missing opening brace".into(),
-            });
-        }
-
-        self.ptr += 1;
-
-        let mut fields = vec![];
-        loop {
-            if self.peek_token().is_none() {
-                return Err(ParseError {
-                    token: None,
-                    scope: ParseErrorScope::Query,
-                    message: "Missing closing brace".into(),
-                });
-            }
-
-            if let TokenKind::CloseBrace = self.peek_token().unwrap().kind {
-                self.ptr += 1;
-                break;
-            }
-
-            fields.push(self.parse_field()?);
-        }
+        let fields = self.parse_fields_subobject()?;
 
         Ok(ast::Query { fields })
     }
@@ -117,7 +85,41 @@ impl Parser {
     }
 
     fn parse_fields_subobject(&mut self) -> Result<Vec<ast::Field>, ParseError> {
-        todo!()
+        if let Some(Token {
+            kind: TokenKind::OpenBrace,
+            ..
+        }) = self.peek_token()
+        {
+            // Noop.
+        } else {
+            return Err(ParseError {
+                token: self.peek_token_cloned(),
+                scope: ParseErrorScope::Query,
+                message: "Missing opening brace".into(),
+            });
+        }
+
+        self.ptr += 1;
+
+        let mut fields = vec![];
+        loop {
+            if self.peek_token().is_none() {
+                return Err(ParseError {
+                    token: None,
+                    scope: ParseErrorScope::Query,
+                    message: "Missing closing brace".into(),
+                });
+            }
+
+            if let TokenKind::CloseBrace = self.peek_token().unwrap().kind {
+                self.ptr += 1;
+                break;
+            }
+
+            fields.push(self.parse_field()?);
+        }
+
+        Ok(fields)
     }
 
     fn peek_token(&self) -> Option<&Token> {
@@ -143,11 +145,18 @@ mod test {
 
     #[test]
     fn test_plan_fields() {
-        let Root::Query(ast) = parse("{ user company task }").unwrap();
-        assert_eq!(3, ast.fields.len());
-        assert_eq!("user".to_string(), ast.fields[0].name);
-        assert_eq!("company".to_string(), ast.fields[1].name);
-        assert_eq!("task".to_string(), ast.fields[2].name);
+        let Root::Query(query) = parse("{ user company task }").unwrap();
+        assert_eq!(3, query.fields.len());
+        assert_eq!("user".to_string(), query.fields[0].name);
+        assert_eq!("company".to_string(), query.fields[1].name);
+        assert_eq!("task".to_string(), query.fields[2].name);
+    }
+
+    #[test]
+    fn test_nested_fields() {
+        let Root::Query(query) = parse("{ user company { location size } }").unwrap();
+        assert_eq!(2, query.fields.len());
+        assert_eq!(2, query.fields[1].fields.len());
     }
 
     fn parse(raw: &str) -> Result<Root, ParseError> {
