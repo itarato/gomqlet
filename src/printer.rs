@@ -7,7 +7,7 @@ use std::{
 use crate::{
     terminal_handler::TerminalHandler,
     text::Text,
-    tokenizer::{Token, TokenKind, Tokenizer},
+    tokenizer::{Token, Tokenizer},
 };
 
 pub struct Printer {

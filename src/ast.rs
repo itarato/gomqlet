@@ -13,15 +13,17 @@ pub struct Field {
 }
 
 pub struct ArgList {
-    params: Vec<ParamKeyValuePair>,
+    pub params: Vec<ParamKeyValuePair>,
 }
 
 pub struct ParamKeyValuePair {
-    key: String,
-    value: ParamValue,
+    pub key: String,
+    pub value: ParamValue,
 }
 
 pub enum ParamValue {
     Int(i32),
     Str(String),
+    Keyword(String),
+    // TODO: object, list
 }

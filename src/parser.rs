@@ -3,10 +3,10 @@ use crate::tokenizer::{Token, TokenKind};
 
 #[derive(Debug)]
 pub enum ParseErrorScope {
-    Root,
     Query,
-    Mutation,
     Field,
+    ArgList,
+    ArgListValue,
 }
 
 #[derive(Debug)]
@@ -54,30 +54,17 @@ impl Parser {
         {
             keyword.clone()
         } else {
-            return Err(ParseError {
-                message: "Missing field name".into(),
-                token: self.peek_token_cloned(),
-                scope: ParseErrorScope::Field,
-            });
+            return Err(self.parse_error(ParseErrorScope::Field, "Missing field name"));
         };
-
         self.ptr += 1;
 
-        let arglist = if let Some(Token {
-            kind: TokenKind::OpenParen,
-            ..
-        }) = self.peek_token()
-        {
+        let arglist = if self.is_next_token_kind(TokenKind::OpenParen) {
             Some(self.parse_arglist()?)
         } else {
             None
         };
 
-        let fields = if let Some(Token {
-            kind: TokenKind::OpenBrace,
-            ..
-        }) = self.peek_token()
-        {
+        let fields = if self.is_next_token_kind(TokenKind::OpenBrace) {
             self.parse_fields_subobject()?
         } else {
             vec![]
@@ -91,37 +78,93 @@ impl Parser {
     }
 
     fn parse_arglist(&mut self) -> Result<ast::ArgList, ParseError> {
-        todo!()
+        if !self.is_next_token_kind(TokenKind::OpenParen) {
+            return Err(self.parse_error(ParseErrorScope::ArgList, "Missing open paren"));
+        }
+        self.ptr += 1;
+
+        let mut params = vec![];
+        loop {
+            let key = if let Some(Token {
+                kind: TokenKind::Keyword(key),
+                ..
+            }) = self.peek_token()
+            {
+                key.into()
+            } else {
+                return Err(self.parse_error(ParseErrorScope::ArgList, "Missing keyword"));
+            };
+            self.ptr += 1;
+
+            if !self.is_next_token_kind(TokenKind::Colon) {
+                return Err(self.parse_error(ParseErrorScope::ArgList, "Missing colon"));
+            }
+            self.ptr += 1;
+
+            let value = self.parse_arglist_value()?;
+
+            params.push(ast::ParamKeyValuePair { key, value });
+
+            if self.is_next_token_kind(TokenKind::Comma) {
+                self.ptr += 1;
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        if !self.is_next_token_kind(TokenKind::CloseParen) {
+            return Err(self.parse_error(ParseErrorScope::ArgList, "Missing close paren"));
+        }
+        self.ptr += 1;
+
+        Ok(ast::ArgList { params })
+    }
+
+    fn parse_arglist_value(&mut self) -> Result<ast::ParamValue, ParseError> {
+        match self.peek_token_cloned() {
+            Some(Token {
+                kind: TokenKind::IntNumber(value),
+                ..
+            }) => {
+                self.ptr += 1;
+                Ok(ast::ParamValue::Int(value))
+            }
+            Some(Token {
+                kind: TokenKind::Str(value),
+                ..
+            }) => {
+                self.ptr += 1;
+                Ok(ast::ParamValue::Str(value.clone()))
+            }
+            Some(Token {
+                kind: TokenKind::Keyword(value),
+                ..
+            }) => {
+                self.ptr += 1;
+                Ok(ast::ParamValue::Keyword(value.clone()))
+            }
+            _ => Err(self.parse_error(
+                ParseErrorScope::ArgListValue,
+                "Unexpected arglist value type",
+            )),
+        }
     }
 
     fn parse_fields_subobject(&mut self) -> Result<Vec<ast::Field>, ParseError> {
-        if let Some(Token {
-            kind: TokenKind::OpenBrace,
-            ..
-        }) = self.peek_token()
-        {
-            // Noop.
+        if self.is_next_token_kind(TokenKind::OpenBrace) {
+            self.ptr += 1;
         } else {
-            return Err(ParseError {
-                token: self.peek_token_cloned(),
-                scope: ParseErrorScope::Query,
-                message: "Missing opening brace".into(),
-            });
+            return Err(self.parse_error(ParseErrorScope::Query, "Missing opening brace"));
         }
-
-        self.ptr += 1;
 
         let mut fields = vec![];
         loop {
             if self.peek_token().is_none() {
-                return Err(ParseError {
-                    token: None,
-                    scope: ParseErrorScope::Query,
-                    message: "Missing closing brace".into(),
-                });
+                return Err(self.parse_error(ParseErrorScope::Query, "Missing closing brace"));
             }
 
-            if let TokenKind::CloseBrace = self.peek_token().unwrap().kind {
+            if self.is_next_token_kind(TokenKind::CloseBrace) {
                 self.ptr += 1;
                 break;
             }
@@ -130,6 +173,22 @@ impl Parser {
         }
 
         Ok(fields)
+    }
+
+    fn parse_error(&self, scope: ParseErrorScope, message: &str) -> ParseError {
+        ParseError {
+            token: self.peek_token_cloned(),
+            scope,
+            message: message.into(),
+        }
+    }
+
+    fn is_next_token_kind(&self, expected: TokenKind) -> bool {
+        if let Some(Token { kind, .. }) = self.peek_token() {
+            kind == &expected
+        } else {
+            false
+        }
     }
 
     fn peek_token(&self) -> Option<&Token> {
@@ -152,6 +211,18 @@ impl Parser {
         }
 
         false
+    }
+
+    fn peek_keyword(&self) -> Option<&String> {
+        if let Some(Token {
+            kind: TokenKind::Keyword(keyword),
+            ..
+        }) = self.peek_token()
+        {
+            Some(keyword)
+        } else {
+            None
+        }
     }
 }
 
@@ -187,6 +258,11 @@ mod test {
         let Root::Query(query) = parse("{ user company { location size } }").unwrap();
         assert_eq!(2, query.fields.len());
         assert_eq!(2, query.fields[1].fields.len());
+    }
+
+    #[test]
+    fn test_arglist() {
+        let Root::Query(query) = parse("{ user(id: \"gid://user/1\", order: ASC) }").unwrap();
     }
 
     fn parse(raw: &str) -> Result<Root, ParseError> {

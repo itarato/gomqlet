@@ -24,10 +24,12 @@ pub enum TokenKind {
     OpenParen,
     CloseParen,
     Colon,
+    Comma,
     IntNumber(i32),
     Keyword(String),
     Str(String),
     Whitespace(String),
+    Invalid(String),
 }
 
 impl TokenKind {
@@ -35,10 +37,11 @@ impl TokenKind {
         match self {
             TokenKind::CloseBrace | TokenKind::OpenBrace => 92,
             TokenKind::CloseParen | TokenKind::OpenParen => 96,
-            TokenKind::Colon => 97,
+            TokenKind::Colon | TokenKind::Comma => 97,
             TokenKind::Keyword(_) => 93,
             TokenKind::IntNumber(_) => 95,
             TokenKind::Str(_) => 94,
+            TokenKind::Invalid(_) => 91,
             _ => 0,
         }
     }
@@ -75,7 +78,11 @@ impl Tokenizer {
                     tokens.push(Token::new(TokenKind::Colon, pos, 1, ":".into()));
                     pos += 1;
                 }
-                'a'..='z' => {
+                ',' => {
+                    tokens.push(Token::new(TokenKind::Comma, pos, 1, ",".into()));
+                    pos += 1;
+                }
+                'a'..='z' | 'A'..='Z' => {
                     tokens.push(Tokenizer::consume_keyword(&chars, &mut pos));
                 }
                 ' ' | '\t' | '\r' | '\n' => {
@@ -105,7 +112,7 @@ impl Tokenizer {
         let mut fragment = String::new();
 
         while *pos < chars.len() {
-            if !chars[*pos].is_ascii_alphabetic() {
+            if !chars[*pos].is_ascii_alphabetic() && chars[*pos] != '_' {
                 break;
             }
 
@@ -165,28 +172,46 @@ impl Tokenizer {
     }
 
     fn consume_string(chars: &Vec<char>, pos: &mut usize) -> Token {
+        let mut original = String::new();
         let mut fragment = String::new();
+
+        original.push(chars[*pos]);
 
         *pos += 1; // Quote.
 
+        let mut has_closing_quote = false;
+
         while *pos < chars.len() {
             if chars[*pos] == '"' {
+                has_closing_quote = true;
                 break;
             }
 
             fragment.push(chars[*pos]);
+            original.push(chars[*pos]);
             *pos += 1;
         }
 
-        *pos += 1; // Closing quote;
-        let fragment_len = fragment.len();
+        if has_closing_quote {
+            original.push(chars[*pos]);
+            *pos += 1; // Closing quote;
+            let fragment_len = fragment.len();
 
-        Token::new(
-            TokenKind::Str(fragment.clone()),
-            *pos - fragment_len - 2,
-            fragment_len + 2,
-            format!("\"{}\"", fragment),
-        )
+            Token::new(
+                TokenKind::Str(fragment.clone()),
+                *pos - fragment_len - 2,
+                fragment_len + 2,
+                original,
+            )
+        } else {
+            let original_len = original.len();
+            Token::new(
+                TokenKind::Invalid("Invalid string token".into()),
+                *pos - original_len,
+                original_len,
+                original,
+            )
+        }
     }
 }
 
@@ -278,5 +303,33 @@ mod test {
             Token::new(TokenKind::CloseBrace, 18, 1, "}".into()),
             tokens[3]
         );
+    }
+
+    #[test]
+    fn test_comma() {
+        let tokens = Tokenizer::tokenize("foo: \"bar\", bar: 123", false);
+
+        assert_eq!(7, tokens.len());
+        assert_eq!(TokenKind::Comma, tokens[3].kind);
+    }
+
+    #[test]
+    fn test_invalid_string() {
+        let tokens = Tokenizer::tokenize("\"hello  ", true);
+
+        assert_eq!(1, tokens.len());
+        assert_eq!(
+            TokenKind::Invalid("Invalid string token".into()),
+            tokens[0].kind
+        );
+        assert_eq!("\"hello  ".to_string(), tokens[0].original);
+    }
+
+    #[test]
+    fn test_capital_and_snake_keyword() {
+        let tokens = Tokenizer::tokenize("HELLO_WORLD", false);
+
+        assert_eq!(1, tokens.len());
+        assert_eq!(TokenKind::Keyword("HELLO_WORLD".into()), tokens[0].kind);
     }
 }
