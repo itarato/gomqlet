@@ -16,11 +16,13 @@ pub struct ArgList {
     pub params: Vec<ParamKeyValuePair>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct ParamKeyValuePair {
     pub key: String,
     pub value: ParamValue,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum ParamValue {
     Int(i32),
     Str(String),

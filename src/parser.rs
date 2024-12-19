@@ -228,7 +228,10 @@ impl Parser {
 
 #[cfg(test)]
 mod test {
-    use crate::{ast::Root, tokenizer::Tokenizer};
+    use crate::{
+        ast::{self, Root},
+        tokenizer::Tokenizer,
+    };
 
     use super::{ParseError, Parser};
 
@@ -263,6 +266,16 @@ mod test {
     #[test]
     fn test_arglist() {
         let Root::Query(query) = parse("{ user(id: \"gid://user/1\", order: ASC) }").unwrap();
+
+        assert_eq!(1, query.fields.len());
+
+        assert_eq!(
+            ast::ParamKeyValuePair {
+                key: "id".into(),
+                value: ast::ParamValue::Str("gid://user/1".into()),
+            },
+            query.fields[0].arglist.as_ref().unwrap().params[0]
+        );
     }
 
     fn parse(raw: &str) -> Result<Root, ParseError> {
