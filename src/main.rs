@@ -2,12 +2,11 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     io::{self, Read, Write},
-    os::fd::AsRawFd,
     rc::Rc,
 };
 
+use analyzer::Analyzer;
 use editor::{Editor, EditorInput};
-use graphql_parser::parse_schema;
 use printer::Printer;
 use terminal_handler::TerminalHandler;
 use text::Text;
@@ -17,6 +16,7 @@ extern crate termios;
 #[macro_use]
 extern crate log;
 
+mod analyzer;
 mod ast;
 mod editor;
 mod parser;
@@ -41,6 +41,7 @@ struct Gomqlet {
     terminal_handler: TerminalHandler,
     editor: Editor,
     printer: Printer,
+    analyzer: Analyzer,
 }
 
 impl Gomqlet {
@@ -50,7 +51,8 @@ impl Gomqlet {
         Ok(Gomqlet {
             terminal_handler,
             editor: Editor::new(content.clone()),
-            printer: Printer::new(content),
+            printer: Printer::new(content.clone()),
+            analyzer: Analyzer::new(content.clone()),
         })
     }
 
@@ -89,6 +91,8 @@ impl Gomqlet {
                         self.editor.parse_input(EditorInput::Down);
                     }
                 };
+
+                self.analyzer.analyze();
 
                 self.printer.print();
             }
