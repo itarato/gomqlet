@@ -35,6 +35,12 @@ impl Parser {
     }
 
     fn parse_query(&mut self) -> Result<ast::Query, ParseError> {
+        let pos = if let Some(token) = self.peek_token() {
+            token.pos
+        } else {
+            return Err(self.parse_error(ParseErrorScope::Query, "Empty query"));
+        };
+
         if self.is_next_keyword("query") {
             self.ptr += 1;
         }
@@ -43,16 +49,17 @@ impl Parser {
 
         let fields = self.parse_fields_subobject()?;
 
-        Ok(ast::Query { fields })
+        Ok(ast::Query { pos, fields })
     }
 
     fn parse_field(&mut self) -> Result<ast::Field, ParseError> {
-        let name = if let Some(Token {
+        let (name, pos) = if let Some(Token {
             kind: TokenKind::Keyword(keyword),
+            pos,
             ..
         }) = self.peek_token()
         {
-            keyword.clone()
+            (keyword.clone(), *pos)
         } else {
             return Err(self.parse_error(ParseErrorScope::Field, "Missing field name"));
         };
@@ -71,6 +78,7 @@ impl Parser {
         };
 
         Ok(ast::Field {
+            pos,
             name,
             arglist,
             fields,
@@ -81,16 +89,18 @@ impl Parser {
         if !self.is_next_token_kind(TokenKind::OpenParen) {
             return Err(self.parse_error(ParseErrorScope::ArgList, "Missing open paren"));
         }
+        let pos = self.peek_token().unwrap().pos;
         self.ptr += 1;
 
         let mut params = vec![];
         loop {
-            let key = if let Some(Token {
+            let (key, key_pos) = if let Some(Token {
                 kind: TokenKind::Keyword(key),
+                pos,
                 ..
             }) = self.peek_token()
             {
-                key.into()
+                (key.into(), *pos)
             } else {
                 return Err(self.parse_error(ParseErrorScope::ArgList, "Missing keyword"));
             };
@@ -103,7 +113,11 @@ impl Parser {
 
             let value = self.parse_arglist_value()?;
 
-            params.push(ast::ParamKeyValuePair { key, value });
+            params.push(ast::ParamKeyValuePair {
+                pos: key_pos,
+                key,
+                value,
+            });
 
             if self.is_next_token_kind(TokenKind::Comma) {
                 self.ptr += 1;
@@ -118,7 +132,7 @@ impl Parser {
         }
         self.ptr += 1;
 
-        Ok(ast::ArgList { params })
+        Ok(ast::ArgList { pos, params })
     }
 
     fn parse_arglist_value(&mut self) -> Result<ast::ParamValue, ParseError> {
@@ -271,6 +285,7 @@ mod test {
 
         assert_eq!(
             ast::ParamKeyValuePair {
+                pos: 7,
                 key: "id".into(),
                 value: ast::ParamValue::Str("gid://user/1".into()),
             },
