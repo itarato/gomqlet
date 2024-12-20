@@ -7,6 +7,7 @@ use std::{
 };
 
 use editor::{Editor, EditorInput};
+use graphql_parser::parse_schema;
 use printer::Printer;
 use terminal_handler::TerminalHandler;
 use text::Text;
