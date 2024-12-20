@@ -57,7 +57,6 @@ impl Gomqlet {
     fn exec_loop(&mut self) -> io::Result<()> {
         let mut stdin = io::stdin();
         let mut stdout = io::stdout();
-        dbg!(stdin.as_raw_fd());
         let mut buf: [u8; 8] = [0; 8];
 
         TerminalHandler::clear_screen()?;
@@ -70,35 +69,29 @@ impl Gomqlet {
                 continue;
             }
             let cmds = parse_stdin_bytes(&mut buf, read_len);
-            // debug!("Read len: {}", read_len);
 
             for cmd in cmds {
                 match cmd {
                     KeyboardInput::CtrlC | KeyboardInput::CtrlD => return Ok(()),
                     KeyboardInput::Key(code) => {
                         self.editor.parse_input(EditorInput::Char(code));
-                        self.printer.print();
                     }
                     KeyboardInput::Left => {
                         self.editor.parse_input(EditorInput::Left);
-                        self.printer.print();
                     }
                     KeyboardInput::Right => {
                         self.editor.parse_input(EditorInput::Right);
-                        self.printer.print();
                     }
                     KeyboardInput::Up => {
                         self.editor.parse_input(EditorInput::Up);
-                        self.printer.print();
                     }
                     KeyboardInput::Down => {
                         self.editor.parse_input(EditorInput::Down);
-                        self.printer.print();
                     }
                 };
-            }
 
-            // debug!("Key hit: {}", buf[0]);
+                self.printer.print();
+            }
         }
     }
 }
