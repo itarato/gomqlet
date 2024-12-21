@@ -197,6 +197,9 @@ impl Tokenizer {
                 has_closing_quote = true;
                 break;
             }
+            if chars[*pos] == '\n' {
+                break;
+            }
 
             fragment.push(chars[*pos]);
             original.push(chars[*pos]);
@@ -349,5 +352,12 @@ mod test {
         let tokens = Tokenizer::tokenize("  \n  ", true);
         assert_eq!(3, tokens.len());
         assert_eq!(TokenKind::LineBreak, tokens[1].kind);
+    }
+
+    #[test]
+    fn test_string_does_not_consume_newline() {
+        let tokens = Tokenizer::tokenize("abc\"\ndef", true);
+        assert_eq!(4, tokens.len());
+        assert_eq!(TokenKind::LineBreak, tokens[2].kind);
     }
 }

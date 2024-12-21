@@ -95,33 +95,27 @@ impl Gomqlet {
                     }
                 };
 
-                let lines_tokens = self.build_lines_tokens();
-                let tokens = lines_tokens
+                let tokens = self.build_tokens();
+                let tokens_without_whitecpace = tokens
                     .clone()
                     .into_iter()
-                    .flatten()
                     .filter(|token| match token.kind {
                         TokenKind::Whitespace(_) => false,
+                        TokenKind::LineBreak => false,
                         _ => true,
                     })
                     .collect::<Vec<_>>();
 
-                self.analyzer.analyze(tokens);
+                self.analyzer.analyze(tokens_without_whitecpace);
                 self.printer
-                    .print(lines_tokens, self.content.borrow().cursor.clone());
+                    .print(tokens, self.content.borrow().cursor.clone());
             }
         }
     }
 
     // TODO: Position is not accurate in a global context. Make the printer able to work with a single list (not nested).
-    fn build_lines_tokens(&self) -> Vec<Vec<Token>> {
-        self.content
-            .borrow()
-            .lines
-            .clone()
-            .into_iter()
-            .map(|line| Tokenizer::tokenize(&*line, true))
-            .collect()
+    fn build_tokens(&self) -> Vec<Token> {
+        Tokenizer::tokenize_lines(&self.content.borrow().lines, true)
     }
 }
 
