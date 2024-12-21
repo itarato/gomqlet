@@ -29,6 +29,7 @@ pub enum TokenKind {
     Keyword(String),
     Str(String),
     Whitespace(String),
+    LineBreak,
     Invalid(String),
 }
 
@@ -82,10 +83,16 @@ impl Tokenizer {
                     tokens.push(Token::new(TokenKind::Comma, pos, 1, ",".into()));
                     pos += 1;
                 }
+                '\n' => {
+                    if record_whitespace {
+                        tokens.push(Token::new(TokenKind::LineBreak, pos, 1, "\n".into()));
+                    }
+                    pos += 1;
+                }
                 'a'..='z' | 'A'..='Z' => {
                     tokens.push(Tokenizer::consume_keyword(&chars, &mut pos));
                 }
-                ' ' | '\t' | '\r' | '\n' => {
+                ' ' | '\t' => {
                     if record_whitespace {
                         tokens.push(Tokenizer::consume_whitespace(&chars, &mut pos));
                     } else {
@@ -133,7 +140,7 @@ impl Tokenizer {
         let mut fragment = String::new();
 
         while *pos < chars.len() {
-            if !chars[*pos].is_ascii_whitespace() {
+            if !(chars[*pos] == ' ' || chars[*pos] == '\t') {
                 break;
             }
 
@@ -246,7 +253,7 @@ mod test {
 
     #[test]
     fn test_keyword_with_whitespaces() {
-        let tokens = Tokenizer::tokenize("\t {     \n\nuser\r\n  }    ", false);
+        let tokens = Tokenizer::tokenize("\t {     user  }    ", false);
         assert_eq!(3, tokens.len());
         assert_eq!(TokenKind::OpenBrace, tokens[0].kind);
         assert_eq!(TokenKind::Keyword("user".into()), tokens[1].kind);
@@ -331,5 +338,12 @@ mod test {
 
         assert_eq!(1, tokens.len());
         assert_eq!(TokenKind::Keyword("HELLO_WORLD".into()), tokens[0].kind);
+    }
+
+    #[test]
+    fn test_line_break() {
+        let tokens = Tokenizer::tokenize("  \n  ", true);
+        assert_eq!(3, tokens.len());
+        assert_eq!(TokenKind::LineBreak, tokens[1].kind);
     }
 }

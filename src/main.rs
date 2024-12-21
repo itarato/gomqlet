@@ -113,6 +113,7 @@ impl Gomqlet {
         }
     }
 
+    // TODO: Position is not accurate in a global context. Make the printer able to work with a single list (not nested).
     fn build_lines_tokens(&self) -> Vec<Vec<Token>> {
         self.content
             .borrow()
