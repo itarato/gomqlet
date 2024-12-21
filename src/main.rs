@@ -10,6 +10,7 @@ use editor::{Editor, EditorInput};
 use printer::Printer;
 use terminal_handler::TerminalHandler;
 use text::Text;
+use tokenizer::{Token, TokenKind, Tokenizer};
 
 extern crate pretty_env_logger;
 extern crate termios;
@@ -42,6 +43,7 @@ struct Gomqlet {
     editor: Editor,
     printer: Printer,
     analyzer: Analyzer,
+    content: Rc<RefCell<Text>>,
 }
 
 impl Gomqlet {
@@ -51,8 +53,9 @@ impl Gomqlet {
         Ok(Gomqlet {
             terminal_handler,
             editor: Editor::new(content.clone()),
-            printer: Printer::new(content.clone()),
-            analyzer: Analyzer::new(content.clone()),
+            printer: Printer::new(),
+            analyzer: Analyzer::new(),
+            content,
         })
     }
 
@@ -92,11 +95,32 @@ impl Gomqlet {
                     }
                 };
 
-                self.analyzer.analyze();
+                let lines_tokens = self.build_lines_tokens();
+                let tokens = lines_tokens
+                    .clone()
+                    .into_iter()
+                    .flatten()
+                    .filter(|token| match token.kind {
+                        TokenKind::Whitespace(_) => false,
+                        _ => true,
+                    })
+                    .collect::<Vec<_>>();
 
-                self.printer.print();
+                self.analyzer.analyze(tokens);
+                self.printer
+                    .print(lines_tokens, self.content.borrow().cursor.clone());
             }
         }
+    }
+
+    fn build_lines_tokens(&self) -> Vec<Vec<Token>> {
+        self.content
+            .borrow()
+            .lines
+            .clone()
+            .into_iter()
+            .map(|line| Tokenizer::tokenize(&*line, true))
+            .collect()
     }
 }
 

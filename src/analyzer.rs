@@ -1,15 +1,13 @@
-use std::{cell::RefCell, rc::Rc};
+use crate::{parser::Parser, tokenizer::Token};
 
-use crate::text::Text;
-
-pub struct Analyzer {
-    content: Rc<RefCell<Text>>,
-}
+pub struct Analyzer;
 
 impl Analyzer {
-    pub fn new(content: Rc<RefCell<Text>>) -> Analyzer {
-        Analyzer { content }
+    pub fn new() -> Analyzer {
+        Analyzer
     }
 
-    pub fn analyze(&self) {}
+    pub fn analyze(&self, tokens: Vec<Token>) {
+        let ast = Parser::new(tokens).parse();
+    }
 }
