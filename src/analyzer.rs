@@ -61,6 +61,10 @@ impl Analyzer {
                     return;
                 }
             }
+
+            if let Some(field_list) = &field.field_list {
+                // CONTINUE HERE
+            }
         }
 
         // In query but not on fields. -> AC can offer fields.
