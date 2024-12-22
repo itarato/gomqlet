@@ -15,6 +15,11 @@ impl Token {
             original,
         }
     }
+
+    // The position after the token (aka non inclusive).
+    pub fn end_pos(&self) -> usize {
+        self.pos + self.len
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]

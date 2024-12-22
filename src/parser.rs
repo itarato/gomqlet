@@ -1,4 +1,4 @@
-use crate::ast;
+use crate::ast::{self, FieldList};
 use crate::tokenizer::{Token, TokenKind};
 
 #[derive(Debug)]
@@ -35,7 +35,7 @@ impl Parser {
     }
 
     fn parse_query(&mut self) -> Result<ast::Query, ParseError> {
-        let pos = if let Some(token) = self.peek_token() {
+        let start_pos = if let Some(token) = self.peek_token() {
             token.pos
         } else {
             return Err(self.parse_error(ParseErrorScope::Query, "Empty query"));
@@ -47,41 +47,51 @@ impl Parser {
 
         // TODO variables.
 
-        let fields = self.parse_fields_subobject()?;
+        let field_list = self.parse_fields_subobject()?;
 
-        Ok(ast::Query { pos, fields })
+        Ok(ast::Query {
+            start_pos,
+            end_pos: field_list.end_pos,
+            field_list,
+        })
     }
 
     fn parse_field(&mut self) -> Result<ast::Field, ParseError> {
-        let (name, pos) = if let Some(Token {
-            kind: TokenKind::Keyword(keyword),
-            pos,
+        let name_token = if let Some(Token {
+            kind: TokenKind::Keyword(_),
             ..
         }) = self.peek_token()
         {
-            (keyword.clone(), *pos)
+            self.peek_token_cloned().unwrap()
         } else {
             return Err(self.parse_error(ParseErrorScope::Field, "Missing field name"));
         };
         self.ptr += 1;
 
+        let mut end_pos = name_token.end_pos();
+
         let arglist = if self.is_next_token_kind(TokenKind::OpenParen) {
-            Some(self.parse_arglist()?)
+            let arglist = self.parse_arglist()?;
+            end_pos = arglist.end_pos;
+            Some(arglist)
         } else {
             None
         };
 
-        let fields = if self.is_next_token_kind(TokenKind::OpenBrace) {
-            self.parse_fields_subobject()?
+        let field_list = if self.is_next_token_kind(TokenKind::OpenBrace) {
+            let field_list = self.parse_fields_subobject()?;
+            end_pos = field_list.end_pos;
+            Some(field_list)
         } else {
-            vec![]
+            None
         };
 
         Ok(ast::Field {
-            pos,
-            name,
+            start_pos: name_token.pos,
+            end_pos,
+            name: name_token,
             arglist,
-            fields,
+            field_list,
         })
     }
 
@@ -89,18 +99,17 @@ impl Parser {
         if !self.is_next_token_kind(TokenKind::OpenParen) {
             return Err(self.parse_error(ParseErrorScope::ArgList, "Missing open paren"));
         }
-        let pos = self.peek_token().unwrap().pos;
+        let start_pos = self.peek_token().unwrap().pos;
         self.ptr += 1;
 
         let mut params = vec![];
         loop {
-            let (key, key_pos) = if let Some(Token {
-                kind: TokenKind::Keyword(key),
-                pos,
+            let key = if let Some(Token {
+                kind: TokenKind::Keyword(_),
                 ..
             }) = self.peek_token()
             {
-                (key.into(), *pos)
+                self.peek_token_cloned().unwrap()
             } else {
                 return Err(self.parse_error(ParseErrorScope::ArgList, "Missing keyword"));
             };
@@ -114,7 +123,8 @@ impl Parser {
             let value = self.parse_arglist_value()?;
 
             params.push(ast::ParamKeyValuePair {
-                pos: key_pos,
+                start_pos: key.pos,
+                end_pos: value.end_pos(),
                 key,
                 value,
             });
@@ -130,33 +140,33 @@ impl Parser {
         if !self.is_next_token_kind(TokenKind::CloseParen) {
             return Err(self.parse_error(ParseErrorScope::ArgList, "Missing close paren"));
         }
+        let end_pos = self.peek_token().unwrap().end_pos();
         self.ptr += 1;
 
-        Ok(ast::ArgList { pos, params })
+        Ok(ast::ArgList {
+            start_pos,
+            end_pos,
+            params,
+        })
     }
 
     fn parse_arglist_value(&mut self) -> Result<ast::ParamValue, ParseError> {
-        match self.peek_token_cloned() {
+        let token = self.peek_token_cloned();
+        match token {
             Some(Token {
-                kind: TokenKind::IntNumber(value),
+                kind: TokenKind::IntNumber(_),
+                ..
+            })
+            | Some(Token {
+                kind: TokenKind::Str(_),
+                ..
+            })
+            | Some(Token {
+                kind: TokenKind::Keyword(_),
                 ..
             }) => {
                 self.ptr += 1;
-                Ok(ast::ParamValue::Int(value))
-            }
-            Some(Token {
-                kind: TokenKind::Str(value),
-                ..
-            }) => {
-                self.ptr += 1;
-                Ok(ast::ParamValue::Str(value.clone()))
-            }
-            Some(Token {
-                kind: TokenKind::Keyword(value),
-                ..
-            }) => {
-                self.ptr += 1;
-                Ok(ast::ParamValue::Keyword(value.clone()))
+                Ok(ast::ParamValue::Simple(token.unwrap()))
             }
             _ => Err(self.parse_error(
                 ParseErrorScope::ArgListValue,
@@ -165,12 +175,14 @@ impl Parser {
         }
     }
 
-    fn parse_fields_subobject(&mut self) -> Result<Vec<ast::Field>, ParseError> {
-        if self.is_next_token_kind(TokenKind::OpenBrace) {
+    fn parse_fields_subobject(&mut self) -> Result<FieldList, ParseError> {
+        let start_pos = if self.is_next_token_kind(TokenKind::OpenBrace) {
+            let start_pos = self.peek_token().unwrap().pos;
             self.ptr += 1;
+            start_pos
         } else {
             return Err(self.parse_error(ParseErrorScope::Query, "Missing opening brace"));
-        }
+        };
 
         let mut fields = vec![];
         loop {
@@ -179,14 +191,17 @@ impl Parser {
             }
 
             if self.is_next_token_kind(TokenKind::CloseBrace) {
+                let end_pos = self.peek_token().unwrap().end_pos();
                 self.ptr += 1;
-                break;
+                return Ok(ast::FieldList {
+                    start_pos,
+                    end_pos,
+                    fields,
+                });
             }
 
             fields.push(self.parse_field()?);
         }
-
-        Ok(fields)
     }
 
     fn parse_error(&self, scope: ParseErrorScope, message: &str) -> ParseError {
@@ -214,11 +229,7 @@ impl Parser {
     }
 
     fn is_next_keyword(&self, value: &str) -> bool {
-        if let Some(Token {
-            kind: TokenKind::Keyword(keyword),
-            ..
-        }) = self.peek_token()
-        {
+        if let Some(keyword) = self.peek_keyword() {
             if keyword == value {
                 return true;
             }
@@ -242,54 +253,60 @@ impl Parser {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        ast::{self, Root},
-        tokenizer::Tokenizer,
-    };
+    use crate::{ast::Root, tokenizer::Tokenizer};
 
     use super::{ParseError, Parser};
 
     #[test]
     fn test_empty() {
         let Root::Query(query) = parse("{}").unwrap();
-        assert_eq!(0, query.fields.len());
+        assert_eq!(0, query.field_list.fields.len());
     }
 
     #[test]
     fn test_optional_query_keywors() {
         let Root::Query(query) = parse("query { user }").unwrap();
-        assert_eq!(1, query.fields.len());
+        assert_eq!(1, query.field_list.fields.len());
     }
 
     #[test]
     fn test_plan_fields() {
         let Root::Query(query) = parse("{ user company task }").unwrap();
-        assert_eq!(3, query.fields.len());
-        assert_eq!("user".to_string(), query.fields[0].name);
-        assert_eq!("company".to_string(), query.fields[1].name);
-        assert_eq!("task".to_string(), query.fields[2].name);
+        assert_eq!(3, query.field_list.fields.len());
+        assert_eq!("user".to_string(), query.field_list.fields[0].name.original);
+        assert_eq!(
+            "company".to_string(),
+            query.field_list.fields[1].name.original
+        );
+        assert_eq!("task".to_string(), query.field_list.fields[2].name.original);
     }
 
     #[test]
     fn test_nested_fields() {
         let Root::Query(query) = parse("{ user company { location size } }").unwrap();
-        assert_eq!(2, query.fields.len());
-        assert_eq!(2, query.fields[1].fields.len());
+        assert_eq!(2, query.field_list.fields.len());
+        assert_eq!(
+            2,
+            query.field_list.fields[1]
+                .field_list
+                .as_ref()
+                .unwrap()
+                .fields
+                .len()
+        );
     }
 
     #[test]
     fn test_arglist() {
         let Root::Query(query) = parse("{ user(id: \"gid://user/1\", order: ASC) }").unwrap();
 
-        assert_eq!(1, query.fields.len());
+        assert_eq!(1, query.field_list.fields.len());
 
         assert_eq!(
-            ast::ParamKeyValuePair {
-                pos: 7,
-                key: "id".into(),
-                value: ast::ParamValue::Str("gid://user/1".into()),
-            },
-            query.fields[0].arglist.as_ref().unwrap().params[0]
+            "id".to_string(),
+            query.field_list.fields[0].arglist.as_ref().unwrap().params[0]
+                .key
+                .original,
         );
     }
 

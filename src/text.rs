@@ -107,4 +107,14 @@ impl Text {
             }
         }
     }
+
+    pub fn new_line_adjusted_cursor_position(&self) -> usize {
+        let mut pos = 0usize;
+
+        for i in 0..self.cursor.y {
+            pos += self.lines[i].len() + 1;
+        }
+
+        pos + self.cursor.x
+    }
 }
