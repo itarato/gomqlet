@@ -1,5 +1,5 @@
 use crate::{
-    ast::{ArgList, Query, Root},
+    ast::{ArgList, FieldList, Query, Root},
     parser::Parser,
     tokenizer::Token,
 };
@@ -25,6 +25,10 @@ impl Analyzer {
 
     pub fn analyze(&self, tokens: Vec<Token>, pos: usize) {
         let ast = Parser::new(tokens).parse();
+        match &ast {
+            Ok(root) => Analyzer::find_pos_in_root(root, pos),
+            Err(err) => debug!("AST error: {:?}", err),
+        }
     }
 
     fn find_pos_in_root(root: &Root, pos: usize) {
@@ -34,12 +38,16 @@ impl Analyzer {
     }
 
     fn find_pos_in_query(query: &Query, pos: usize) {
-        if pos < query.start_pos || pos >= query.end_pos {
+        Analyzer::find_pos_in_field_list(&query.field_list, pos);
+    }
+
+    fn find_pos_in_field_list(field_list: &FieldList, pos: usize) -> bool {
+        if pos < field_list.start_pos || pos > field_list.end_pos {
             // Outside of the whole query.
-            return;
+            return false;
         }
 
-        for field in &query.field_list.fields {
+        for field in &field_list.fields {
             if pos > field.end_pos {
                 continue;
             }
@@ -52,23 +60,27 @@ impl Analyzer {
             if pos >= field.name.pos && pos <= field.name.end_pos() {
                 // On the field name.
                 debug!("On field name: {}", field.name.original);
-                return;
+                return true;
             }
 
             if let Some(arglist) = &field.arglist {
                 let has_match = Analyzer::find_pos_in_arglist(arglist, pos);
                 if has_match {
-                    return;
+                    return true;
                 }
             }
 
             if let Some(field_list) = &field.field_list {
-                // CONTINUE HERE
+                let has_match = Analyzer::find_pos_in_field_list(field_list, pos);
+                if has_match {
+                    return true;
+                }
             }
         }
 
         // In query but not on fields. -> AC can offer fields.
-        debug!("On query.");
+        debug!("On field list.");
+        true
     }
 
     fn find_pos_in_arglist(arglist: &ArgList, pos: usize) -> bool {
