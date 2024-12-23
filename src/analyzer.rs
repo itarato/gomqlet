@@ -1,3 +1,5 @@
+use graphql_parser::{parse_schema, schema::Document};
+
 use crate::{
     ast::{ArgList, FieldList, Query, Root},
     parser::Parser,
@@ -25,13 +27,16 @@ impl Analyzer {
 
     pub fn analyze(&self, tokens: Vec<Token>, pos: usize) {
         let ast = Parser::new(tokens).parse();
+
+        let schema = parse_schema::<String>("./misc/example.schema").unwrap();
+
         match &ast {
-            Ok(root) => Analyzer::find_pos_in_root(root, pos),
             Err(err) => debug!("AST error: {:?}", err),
+            Ok(root) => Analyzer::find_pos_in_root(root, pos, &schema),
         }
     }
 
-    fn find_pos_in_root(root: &Root, pos: usize) {
+    fn find_pos_in_root(root: &Root, pos: usize, schema: &Document<'_, String>) {
         match root {
             Root::Query(query) => Analyzer::find_pos_in_query(query, pos),
         }
