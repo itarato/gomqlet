@@ -1,5 +1,6 @@
 use graphql_parser::{
     parse_schema,
+    query::Type,
     schema::{Document, Field, TypeDefinition},
 };
 
@@ -85,28 +86,27 @@ impl Analyzer {
             }
 
             if let Some(field_list) = &field.field_list {
-                let field_definition = Analyzer::lookup_field_in_object_type_definition(
+                if let Some(field_definition) = Analyzer::lookup_field_in_object_type_definition(
                     scope,
                     field.name.original.clone(),
-                );
-
-                // FIX THIS: use the field definition's result to find the type definition.
-
-                if let Some(subfield_type_definition) =
-                    Analyzer::lookup_graphql_type_definition(schema, field.name.original)
-                {
-                    let has_match = Analyzer::find_pos_in_field_list(
-                        field_list,
-                        pos,
-                        schema,
-                        subfield_type_definition,
-                    );
-                    if has_match {
-                        return true;
+                ) {
+                    if let Some(field_type_name) =
+                        Analyzer::lookup_type_name_from_field_definition(field_definition)
+                    {
+                        if let Some(subfield_type_definition) =
+                            Analyzer::lookup_graphql_type_definition(schema, field_type_name)
+                        {
+                            let has_match = Analyzer::find_pos_in_field_list(
+                                field_list,
+                                pos,
+                                schema,
+                                subfield_type_definition,
+                            );
+                            if has_match {
+                                return true;
+                            }
+                        }
                     }
-                } else {
-                    // Parent field is not found already.
-                    return false;
                 }
             }
 
@@ -189,6 +189,20 @@ impl Analyzer {
                 None
             }
             _ => None,
+        }
+    }
+
+    fn lookup_type_name_from_field_definition<'a>(
+        field_definition: &'a Field<'a, String>,
+    ) -> Option<String> {
+        Analyzer::lookup_type_name_from_type(&field_definition.field_type)
+    }
+
+    fn lookup_type_name_from_type<'a>(ty: &'a Type<'a, String>) -> Option<String> {
+        match &ty {
+            Type::NamedType(name) => Some(name.clone()),
+            Type::ListType(list) => Analyzer::lookup_type_name_from_type(list),
+            Type::NonNullType(non_null_ty) => Analyzer::lookup_type_name_from_type(non_null_ty),
         }
     }
 }
