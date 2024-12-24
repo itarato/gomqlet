@@ -179,32 +179,31 @@ fn main() -> io::Result<()> {
 
     info!("Gomqlet start");
 
-    // let mut gomqlet = Gomqlet::new()?;
-    // gomqlet.exec_loop()?;
+    let mut gomqlet = Gomqlet::new()?;
+    gomqlet.exec_loop()?;
 
-    let schema = parse_schema::<String>(
-        r"
+    // let schema = parse_schema::<String>(
+    //     r"
 
-    type Query {
-    books: [Book]
-    authors: [Author]
-    }
+    // type Query {
+    // books: [Book]
+    // authors: [Author]
+    // }
 
-    type Book {
-    title: String
-    author: Author
-    }
+    // type Book {
+    // title: String
+    // author: Author
+    // }
 
-    type Author {
-    name: String
-    books: [Book]
-    }
+    // type Author {
+    // name: String
+    // books: [Book]
+    // }
 
-
-    ",
-    )
-    .unwrap();
-    dbg!(schema);
+    // ",
+    // )
+    // .unwrap();
+    // dbg!(schema);
 
     Ok(())
 }

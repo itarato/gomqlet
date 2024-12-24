@@ -32,7 +32,25 @@ impl Analyzer {
     pub fn analyze(&self, tokens: Vec<Token>, pos: usize) {
         let ast = Parser::new(tokens).parse();
 
-        let schema = parse_schema::<String>("./misc/example.schema").unwrap();
+        let schema = parse_schema::<String>(
+            r"
+            type Query {
+                books: [Book]
+                authors: [Author]
+            }
+
+            type Book {
+                title: String
+                author: Author
+            }
+
+            type Author {
+                name: String
+                books: [Book]
+            }
+            ",
+        )
+        .unwrap();
 
         match &ast {
             Err(err) => debug!("AST error: {:?}", err),
@@ -86,26 +104,26 @@ impl Analyzer {
             }
 
             if let Some(field_list) = &field.field_list {
-                if let Some(field_definition) = Analyzer::lookup_field_in_object_type_definition(
-                    scope,
-                    field.name.original.clone(),
-                ) {
-                    if let Some(field_type_name) =
+                if let Some(subfield_type_definition) =
+                    Analyzer::lookup_field_in_object_type_definition(
+                        scope,
+                        field.name.original.clone(),
+                    )
+                    .and_then(|field_definition| {
                         Analyzer::lookup_type_name_from_field_definition(field_definition)
-                    {
-                        if let Some(subfield_type_definition) =
-                            Analyzer::lookup_graphql_type_definition(schema, field_type_name)
-                        {
-                            let has_match = Analyzer::find_pos_in_field_list(
-                                field_list,
-                                pos,
-                                schema,
-                                subfield_type_definition,
-                            );
-                            if has_match {
-                                return true;
-                            }
-                        }
+                    })
+                    .and_then(|field_type_name| {
+                        Analyzer::lookup_graphql_type_definition(schema, field_type_name)
+                    })
+                {
+                    let has_match = Analyzer::find_pos_in_field_list(
+                        field_list,
+                        pos,
+                        schema,
+                        subfield_type_definition,
+                    );
+                    if has_match {
+                        return true;
                     }
                 }
             }
@@ -115,6 +133,11 @@ impl Analyzer {
 
         // In query but not on fields. -> AC can offer fields.
         debug!("On field list.");
+        debug!(
+            "Options: {:?}",
+            Analyzer::lookup_field_name_strings_of_type_definition(scope)
+        );
+
         true
     }
 
@@ -204,5 +227,22 @@ impl Analyzer {
             Type::ListType(list) => Analyzer::lookup_type_name_from_type(list),
             Type::NonNullType(non_null_ty) => Analyzer::lookup_type_name_from_type(non_null_ty),
         }
+    }
+
+    fn lookup_field_name_strings_of_type_definition<'a>(
+        type_definition: &'a TypeDefinition<'a, String>,
+    ) -> Vec<String> {
+        let mut name_strings = vec![];
+
+        match type_definition {
+            TypeDefinition::Object(object) => {
+                for field in &object.fields {
+                    name_strings.push(field.name.clone());
+                }
+            }
+            _ => {}
+        }
+
+        name_strings
     }
 }
