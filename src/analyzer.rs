@@ -47,6 +47,12 @@ impl Analyzer {
             type Author {
                 name: String
                 books: [Book]
+                address: Address
+            }
+
+            type Address {
+                city: String
+                zip: String
             }
             ",
         )

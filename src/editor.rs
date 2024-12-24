@@ -8,6 +8,9 @@ pub enum EditorInput {
     Right,
     Up,
     Down,
+    Home,
+    End,
+    Delete,
 }
 
 pub struct Editor {
@@ -29,6 +32,9 @@ impl Editor {
             EditorInput::Right => self.content.borrow_mut().move_cursor_right(),
             EditorInput::Up => self.content.borrow_mut().move_cursor_up(),
             EditorInput::Down => self.content.borrow_mut().move_cursor_down(),
+            EditorInput::Delete => self.content.borrow_mut().delete(),
+            EditorInput::Home => self.content.borrow_mut().move_cursor_to_home(),
+            EditorInput::End => self.content.borrow_mut().move_cursor_to_end(),
         }
     }
 }

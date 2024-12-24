@@ -7,7 +7,6 @@ use std::{
 
 use analyzer::Analyzer;
 use editor::{Editor, EditorInput};
-use graphql_parser::parse_schema;
 use printer::Printer;
 use terminal_handler::TerminalHandler;
 use text::Text;
@@ -37,6 +36,9 @@ enum KeyboardInput {
     Right,
     Up,
     Down,
+    Home,
+    End,
+    Delete,
 }
 
 struct Gomqlet {
@@ -94,6 +96,15 @@ impl Gomqlet {
                     KeyboardInput::Down => {
                         self.editor.parse_input(EditorInput::Down);
                     }
+                    KeyboardInput::Delete => {
+                        self.editor.parse_input(EditorInput::Delete);
+                    }
+                    KeyboardInput::Home => {
+                        self.editor.parse_input(EditorInput::Home);
+                    }
+                    KeyboardInput::End => {
+                        self.editor.parse_input(EditorInput::End);
+                    }
                 };
 
                 let tokens = self.build_tokens();
@@ -143,6 +154,9 @@ fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
         (vec![27, 91, 66], KeyboardInput::Down),
         (vec![27, 91, 67], KeyboardInput::Right),
         (vec![27, 91, 68], KeyboardInput::Left),
+        (vec![27, 91, 72], KeyboardInput::Home),
+        (vec![27, 91, 70], KeyboardInput::End),
+        (vec![27, 91, 51, 126], KeyboardInput::Delete),
     ]);
     let mut i = 0usize;
     let mut out = vec![];
@@ -158,7 +172,15 @@ fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
                     }
                 }
             }
-            i += 1;
+
+            // We didn't hit the combo - possibly unmapped one.
+            if i != len {
+                warn!("Unmapped combo {:?}", &buf[i..len]);
+            }
+
+            // We might ignore real multi key input - however that's a price to pay as long as we're not mapping
+            // all escape sequenced combos.
+            i = len;
         } else if buf[i] == 3 {
             out.push(KeyboardInput::CtrlC);
             i += 1;

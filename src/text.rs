@@ -108,6 +108,34 @@ impl Text {
         }
     }
 
+    pub fn move_cursor_to_home(&mut self) {
+        self.cursor.x = 0;
+    }
+
+    pub fn move_cursor_to_end(&mut self) {
+        self.cursor.x = self.lines[self.cursor.y].len();
+    }
+
+    pub fn delete(&mut self) {
+        if self.cursor.x < self.lines[self.cursor.y].len() {
+            self.lines
+                .get_mut(self.cursor.y)
+                .expect("Missing line")
+                .remove(self.cursor.x);
+        } else {
+            if self.cursor.y < self.lines.len() - 1 {
+                let next_line_content = self.lines[self.cursor.y + 1].clone();
+                self.lines
+                    .get_mut(self.cursor.y)
+                    .expect("Missing line")
+                    .push_str(&next_line_content);
+                self.lines.remove(self.cursor.y + 1);
+            } else {
+                // Noop.
+            }
+        }
+    }
+
     pub fn new_line_adjusted_cursor_position(&self) -> usize {
         let mut pos = 0usize;
 
