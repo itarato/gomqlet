@@ -118,12 +118,15 @@ impl Gomqlet {
                     })
                     .collect::<Vec<_>>();
 
-                self.analyzer.analyze(
+                let analyzer_result = self.analyzer.analyze(
                     tokens_without_whitecpace,
                     self.content.borrow().new_line_adjusted_cursor_position(),
                 );
-                self.printer
-                    .print(tokens, self.content.borrow().cursor.clone());
+                self.printer.print(
+                    tokens,
+                    self.content.borrow().cursor.clone(),
+                    analyzer_result,
+                );
             }
         }
     }

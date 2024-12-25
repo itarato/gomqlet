@@ -1,6 +1,7 @@
 use std::io::{self, Write};
 
 use crate::{
+    analyzer::{self, AnalyzerResult},
     terminal_handler::TerminalHandler,
     tokenizer::{Token, TokenKind},
     util::CoordUsize,
@@ -13,7 +14,7 @@ impl Printer {
         Printer
     }
 
-    pub fn print(&self, tokens: Vec<Token>, cursor: CoordUsize) {
+    pub fn print(&self, tokens: Vec<Token>, cursor: CoordUsize, analyzer_result: AnalyzerResult) {
         let mut buf: String = String::new();
         TerminalHandler::append_hide_cursor(&mut buf);
         TerminalHandler::append_clear_screen(&mut buf);
@@ -21,6 +22,9 @@ impl Printer {
 
         let output = self.colorize(tokens);
         buf.push_str(&output);
+
+        buf.push_str("\n\r---\n\r");
+        buf.push_str(&format!("{:?}", analyzer_result));
 
         TerminalHandler::append_cursor_location(&mut buf, cursor.x, cursor.y);
         TerminalHandler::append_show_cursor(&mut buf);

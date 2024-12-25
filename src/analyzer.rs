@@ -22,6 +22,7 @@ query {
 
 */
 
+#[derive(Debug)]
 pub enum AnalyzerResult {
     Autocomplete(Vec<String>),
     ParseError(ParseError),
@@ -121,8 +122,12 @@ impl Analyzer {
             if pos >= field.name.pos && pos <= field.name.end_pos() {
                 // On the field name.
                 debug!("On field name: {}", field.name.original);
-                todo!("On-word autocomplete");
-                return Some(AnalyzerResult::Empty);
+                return Some(AnalyzerResult::Autocomplete(
+                    Analyzer::lookup_field_name_strings_of_type_definition(
+                        scope,
+                        field.name.original.clone(),
+                    ),
+                ));
             }
 
             if let Some(arglist) = &field.arglist {
@@ -162,7 +167,7 @@ impl Analyzer {
 
         // In query but not on fields. -> AC can offer fields.
         Some(AnalyzerResult::Autocomplete(
-            Analyzer::lookup_field_name_strings_of_type_definition(scope),
+            Analyzer::lookup_field_name_strings_of_type_definition(scope, String::new()),
         ))
     }
 
@@ -259,13 +264,16 @@ impl Analyzer {
 
     fn lookup_field_name_strings_of_type_definition<'a>(
         type_definition: &'a TypeDefinition<'a, String>,
+        prefix: String,
     ) -> Vec<String> {
         let mut name_strings = vec![];
 
         match type_definition {
             TypeDefinition::Object(object) => {
                 for field in &object.fields {
-                    name_strings.push(field.name.clone());
+                    if field.name.starts_with(&prefix) {
+                        name_strings.push(field.name.clone());
+                    }
                 }
             }
             _ => {}
