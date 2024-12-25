@@ -105,7 +105,7 @@ impl Analyzer {
     ) -> Option<AnalyzerResult> {
         if pos < field_list.start_pos || pos > field_list.end_pos {
             // Outside of the whole query.
-            return false;
+            return None;
         }
 
         for field in &field_list.fields {
@@ -121,13 +121,14 @@ impl Analyzer {
             if pos >= field.name.pos && pos <= field.name.end_pos() {
                 // On the field name.
                 debug!("On field name: {}", field.name.original);
-                return true;
+                todo!("On-word autocomplete");
+                return Some(AnalyzerResult::Empty);
             }
 
             if let Some(arglist) = &field.arglist {
-                let has_match = Analyzer::find_pos_in_arglist(arglist, pos);
-                if has_match {
-                    return true;
+                let result = Analyzer::find_pos_in_arglist(arglist, pos);
+                if result.is_some() {
+                    return result;
                 }
             }
 
@@ -144,32 +145,28 @@ impl Analyzer {
                         Analyzer::lookup_graphql_type_definition(schema, field_type_name)
                     })
                 {
-                    let has_match = Analyzer::find_pos_in_field_list(
+                    let result = Analyzer::find_pos_in_field_list(
                         field_list,
                         pos,
                         schema,
                         subfield_type_definition,
                     );
-                    if has_match {
-                        return true;
+                    if result.is_some() {
+                        return result;
                     }
                 }
             }
 
-            return false;
+            return Some(AnalyzerResult::Empty);
         }
 
         // In query but not on fields. -> AC can offer fields.
-        debug!("On field list.");
-        debug!(
-            "Options: {:?}",
-            Analyzer::lookup_field_name_strings_of_type_definition(scope)
-        );
-
-        true
+        Some(AnalyzerResult::Autocomplete(
+            Analyzer::lookup_field_name_strings_of_type_definition(scope),
+        ))
     }
 
-    fn find_pos_in_arglist(arglist: &ArgList, pos: usize) -> bool {
+    fn find_pos_in_arglist(arglist: &ArgList, pos: usize) -> Option<AnalyzerResult> {
         if pos >= arglist.start_pos && pos < arglist.end_pos {
             // Inside arglist.
 
@@ -185,22 +182,25 @@ impl Analyzer {
                 if pos >= arg.key.pos && pos <= arg.key.end_pos() {
                     // On arg key.
                     debug!("On key: {}", arg.key.original);
-                    return true;
+                    todo!("On-key autocomplete");
+                    return Some(AnalyzerResult::Empty);
                 }
 
                 if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
                     // On arg value.
                     debug!("On arg value: {:?}", arg.value);
-                    return true;
+                    todo!("On-value autocomplete");
+                    return Some(AnalyzerResult::Empty);
                 }
             }
 
             // In arglist -> offer key.
             debug!("On arglist.");
-            return true;
+            todo!("Arglist autocomplete");
+            return Some(AnalyzerResult::Empty);
         }
 
-        false
+        None
     }
 
     fn lookup_graphql_type_definition<'a>(
