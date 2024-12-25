@@ -6,7 +6,7 @@ use graphql_parser::{
 
 use crate::{
     ast::{ArgList, FieldList, Query, Root},
-    parser::Parser,
+    parser::{ParseError, Parser},
     tokenizer::Token,
 };
 
@@ -22,6 +22,13 @@ query {
 
 */
 
+pub enum AnalyzerResult {
+    Autocomplete(Vec<String>),
+    ParseError(ParseError),
+    DefinitionError(String),
+    Empty,
+}
+
 pub struct Analyzer;
 
 impl Analyzer {
@@ -29,7 +36,7 @@ impl Analyzer {
         Analyzer
     }
 
-    pub fn analyze(&self, tokens: Vec<Token>, pos: usize) {
+    pub fn analyze(&self, tokens: Vec<Token>, pos: usize) -> AnalyzerResult {
         let ast = Parser::new(tokens).parse();
 
         let schema = parse_schema::<String>(
@@ -58,21 +65,36 @@ impl Analyzer {
         )
         .unwrap();
 
-        match &ast {
-            Err(err) => debug!("AST error: {:?}", err),
-            Ok(root) => Analyzer::find_pos_in_root(root, pos, &schema),
+        match ast {
+            Err(err) => AnalyzerResult::ParseError(err),
+            Ok(ref root) => Analyzer::find_pos_in_root(root, pos, &schema),
         }
     }
 
-    fn find_pos_in_root<'a>(root: &Root, pos: usize, schema: &'a Document<'a, String>) {
+    fn find_pos_in_root<'a>(
+        root: &Root,
+        pos: usize,
+        schema: &'a Document<'a, String>,
+    ) -> AnalyzerResult {
         match root {
             Root::Query(query) => Analyzer::find_pos_in_query(query, pos, schema),
         }
     }
 
-    fn find_pos_in_query<'a>(query: &Query, pos: usize, schema: &'a Document<'a, String>) {
-        let query_scope = Analyzer::lookup_graphql_type_definition(schema, "Query".into()).unwrap();
-        Analyzer::find_pos_in_field_list(&query.field_list, pos, schema, query_scope);
+    fn find_pos_in_query<'a>(
+        query: &Query,
+        pos: usize,
+        schema: &'a Document<'a, String>,
+    ) -> AnalyzerResult {
+        let query_scope = match Analyzer::lookup_graphql_type_definition(schema, "Query".into()) {
+            Some(scope) => scope,
+            None => {
+                return AnalyzerResult::DefinitionError("Query is not found in the schema".into())
+            }
+        };
+
+        Analyzer::find_pos_in_field_list(&query.field_list, pos, schema, query_scope)
+            .unwrap_or(AnalyzerResult::Empty)
     }
 
     fn find_pos_in_field_list<'a>(
@@ -80,7 +102,7 @@ impl Analyzer {
         pos: usize,
         schema: &'a Document<'a, String>,
         scope: &'a TypeDefinition<'a, String>,
-    ) -> bool {
+    ) -> Option<AnalyzerResult> {
         if pos < field_list.start_pos || pos > field_list.end_pos {
             // Outside of the whole query.
             return false;
