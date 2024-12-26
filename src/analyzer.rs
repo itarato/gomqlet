@@ -29,59 +29,85 @@ pub enum AnalyzerResult {
 }
 
 pub struct Analyzer {
-    schema: Value,
+    schema_types: Vec<Value>,
+    query_root_name: String,
+    mutation_root_name: String,
 }
 
 impl Analyzer {
     pub fn new() -> Analyzer {
+        let schema: Value =
+            serde_json::from_reader(File::open("./misc/shopify.json").unwrap()).unwrap();
+
+        let query_root_name = schema.as_object().unwrap()["data"].as_object().unwrap()["__schema"]
+            .as_object()
+            .unwrap()["queryType"]
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        let mutation_root_name = schema.as_object().unwrap()["data"].as_object().unwrap()
+            ["__schema"]
+            .as_object()
+            .unwrap()["mutationType"]
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        let schema_types = schema
+            .as_object()
+            .unwrap()
+            .get("data")
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .get("__schema")
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .get("types")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
         Analyzer {
-            schema: serde_json::from_reader(
-                File::open("/Users/itarato/Downloads/schema.json").unwrap(),
-            )
-            .unwrap(),
+            schema_types: schema_types.to_owned(),
+            query_root_name,
+            mutation_root_name,
         }
     }
 
     pub fn analyze(&self, tokens: Vec<Token>, pos: usize) -> AnalyzerResult {
         let ast = Parser::new(tokens).parse();
 
-        // match ast {
-        //     Err(err) => AnalyzerResult::ParseError(err),
-        //     Ok(ref root) => Analyzer::find_pos_in_root(root, pos, &schema),
-        // }
-        AnalyzerResult::Empty
+        match ast {
+            Err(err) => AnalyzerResult::ParseError(err),
+            Ok(ref root) => self.find_pos_in_root(root, pos),
+        }
     }
 
-    // fn find_pos_in_root<'a>(
-    //     root: &Root,
-    //     pos: usize,
-    //     schema: &'a Document<'a, String>,
-    // ) -> AnalyzerResult {
-    //     match root {
-    //         Root::Query(query) => Analyzer::find_pos_in_query(query, pos, schema),
-    //     }
-    // }
+    fn find_pos_in_root(&self, root: &Root, pos: usize) -> AnalyzerResult {
+        match root {
+            Root::Query(query) => self.find_pos_in_query(query, pos),
+        }
+    }
 
-    // fn find_pos_in_query<'a>(
-    //     query: &Query,
-    //     pos: usize,
-    //     schema: &'a Document<'a, String>,
-    // ) -> AnalyzerResult {
-    //     let query_scope = match Analyzer::lookup_graphql_type_definition(schema, "Query".into()) {
-    //         Some(scope) => scope,
-    //         None => {
-    //             return AnalyzerResult::DefinitionError("Query is not found in the schema".into())
-    //         }
-    //     };
+    fn find_pos_in_query(&self, query: &Query, pos: usize) -> AnalyzerResult {
+        let query_scope = match self.lookup_graphql_type_definition(self.query_root_name.clone()) {
+            Some(scope) => scope,
+            None => {
+                return AnalyzerResult::DefinitionError("Query is not found in the schema".into())
+            }
+        };
 
-    //     Analyzer::find_pos_in_field_list(&query.field_list, pos, schema, query_scope)
-    //         .unwrap_or(AnalyzerResult::Empty)
-    // }
+        todo!()
+        // Analyzer::find_pos_in_field_list(&query.field_list, pos, query_scope)
+        //     .unwrap_or(AnalyzerResult::Empty)
+    }
 
     // fn find_pos_in_field_list<'a>(
     //     field_list: &FieldList,
     //     pos: usize,
-    //     schema: &'a Document<'a, String>,
     //     scope: &'a TypeDefinition<'a, String>,
     // ) -> Option<AnalyzerResult> {
     //     if pos < field_list.start_pos || pos > field_list.end_pos {
@@ -185,28 +211,25 @@ impl Analyzer {
     //     None
     // }
 
-    // fn lookup_graphql_type_definition<'a>(
-    //     schema: &'a Document<'a, String>,
-    //     name: String,
-    // ) -> Option<&'a TypeDefinition<'a, String>> {
-    //     for definition in &schema.definitions {
-    //         match definition {
-    //             graphql_parser::schema::Definition::TypeDefinition(type_definition) => {
-    //                 match type_definition {
-    //                     TypeDefinition::Object(object) => {
-    //                         if object.name == name {
-    //                             return Some(type_definition);
-    //                         }
-    //                     }
-    //                     _ => continue,
-    //                 }
-    //             }
-    //             _ => continue,
-    //         }
-    //     }
+    fn lookup_graphql_type_definition(&self, name: String) -> Option<Value> {
+        for definition in self.schema_types {
+            match definition {
+                graphql_parser::schema::Definition::TypeDefinition(type_definition) => {
+                    match type_definition {
+                        TypeDefinition::Object(object) => {
+                            if object.name == name {
+                                return Some(type_definition);
+                            }
+                        }
+                        _ => continue,
+                    }
+                }
+                _ => continue,
+            }
+        }
 
-    //     None
-    // }
+        None
+    }
 
     // fn lookup_field_in_object_type_definition<'a>(
     //     type_definition: &'a TypeDefinition<'a, String>,
