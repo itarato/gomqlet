@@ -1,14 +1,12 @@
 use std::{
     cell::RefCell,
     collections::HashMap,
-    fs::File,
     io::{self, Read, Write},
     rc::Rc,
 };
 
 use analyzer::Analyzer;
 use editor::{Editor, EditorInput};
-use graphql_parser::parse_schema;
 use printer::Printer;
 use terminal_handler::TerminalHandler;
 use text::Text;
