@@ -285,33 +285,23 @@ impl Analyzer {
         type_definition: &'a TypeDefinition<'a, String>,
         field_name: String,
     ) -> Result<&'a TypeDefinition<'a, String>, AnalyzerResult> {
-        let field_definition =
-            Analyzer::lookup_field_in_object_type_definition(type_definition, field_name.clone());
-        if field_definition.is_none() {
-            return Err(AnalyzerResult::DefinitionError(format!(
+        Analyzer::lookup_field_in_object_type_definition(type_definition, field_name.clone())
+            .ok_or(AnalyzerResult::DefinitionError(format!(
                 "Field {} not found",
                 field_name
-            )));
-        }
-        let field_definition = field_definition.unwrap();
-
-        let field_type_name = Analyzer::lookup_type_name_from_field_definition(field_definition);
-        if field_type_name.is_none() {
-            return Err(AnalyzerResult::DefinitionError(format!(
-                "Type of field {} not found",
-                field_name
-            )));
-        }
-        let field_type_name = field_type_name.unwrap();
-
-        let subfield_type_definition =
-            Analyzer::lookup_graphql_type_definition(schema, field_type_name.clone());
-        if subfield_type_definition.is_none() {
-            return Err(AnalyzerResult::DefinitionError(format!(
-                "Definition of type {} of field {} not found",
-                field_type_name, field_name
-            )));
-        }
-        Ok(subfield_type_definition.unwrap())
+            )))
+            .and_then(|field_definition| {
+                Analyzer::lookup_type_name_from_field_definition(field_definition).ok_or(
+                    AnalyzerResult::DefinitionError(format!("Field {} not found", field_name)),
+                )
+            })
+            .and_then(|field_type_name| {
+                Analyzer::lookup_graphql_type_definition(schema, field_type_name.clone()).ok_or(
+                    AnalyzerResult::DefinitionError(format!(
+                        "Definition of type {} of field {} not found",
+                        field_type_name, field_name
+                    )),
+                )
+            })
     }
 }
