@@ -139,27 +139,46 @@ impl Analyzer {
             }
 
             if let Some(field_list) = &field.field_list {
-                if let Some(subfield_type_definition) =
-                    Analyzer::lookup_field_in_object_type_definition(
-                        scope,
-                        field.name.original.clone(),
-                    )
-                    .and_then(|field_definition| {
-                        Analyzer::lookup_type_name_from_field_definition(field_definition)
-                    })
-                    .and_then(|field_type_name| {
-                        Analyzer::lookup_graphql_type_definition(schema, field_type_name)
-                    })
-                {
-                    let result = Analyzer::find_pos_in_field_list(
-                        field_list,
-                        pos,
-                        schema,
-                        subfield_type_definition,
-                    );
-                    if result.is_some() {
-                        return result;
-                    }
+                let field_definition = Analyzer::lookup_field_in_object_type_definition(
+                    scope,
+                    field.name.original.clone(),
+                );
+                if field_definition.is_none() {
+                    return Some(AnalyzerResult::DefinitionError(format!(
+                        "Field {} not found",
+                        field.name.original
+                    )));
+                }
+                let field_definition = field_definition.unwrap();
+
+                let field_type_name =
+                    Analyzer::lookup_type_name_from_field_definition(field_definition);
+                if field_type_name.is_none() {
+                    return Some(AnalyzerResult::DefinitionError(format!(
+                        "Type of field {} not found",
+                        field.name.original
+                    )));
+                }
+                let field_type_name = field_type_name.unwrap();
+
+                let subfield_type_definition =
+                    Analyzer::lookup_graphql_type_definition(schema, field_type_name.clone());
+                if subfield_type_definition.is_none() {
+                    return Some(AnalyzerResult::DefinitionError(format!(
+                        "Definition of type {} of field {} not found",
+                        field_type_name, field.name.original
+                    )));
+                }
+                let subfield_type_definition = subfield_type_definition.unwrap();
+
+                let result = Analyzer::find_pos_in_field_list(
+                    field_list,
+                    pos,
+                    schema,
+                    subfield_type_definition,
+                );
+                if result.is_some() {
+                    return result;
                 }
             }
 
