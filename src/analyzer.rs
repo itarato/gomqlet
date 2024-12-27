@@ -173,23 +173,6 @@ impl Analyzer {
     //     None
     // }
 
-    // fn lookup_field_in_object_type_definition<'a>(
-    //     type_definition: &'a TypeDefinition<'a, String>,
-    //     name: String,
-    // ) -> Option<&'a Field<'a, String>> {
-    //     match type_definition {
-    //         TypeDefinition::Object(object) => {
-    //             for field in &object.fields {
-    //                 if field.name == name {
-    //                     return Some(field);
-    //                 }
-    //             }
-    //             None
-    //         }
-    //         _ => None,
-    //     }
-    // }
-
     // fn lookup_type_name_from_field_definition<'a>(
     //     field_definition: &'a Field<'a, String>,
     // ) -> Option<String> {
@@ -202,30 +185,5 @@ impl Analyzer {
     //         Type::ListType(list) => Analyzer::lookup_type_name_from_type(list),
     //         Type::NonNullType(non_null_ty) => Analyzer::lookup_type_name_from_type(non_null_ty),
     //     }
-    // }
-
-    // fn lookup_field_type_defition_of_parent_type_definition<'a>(
-    //     schema: &'a Document<'a, String>,
-    //     type_definition: &'a TypeDefinition<'a, String>,
-    //     field_name: String,
-    // ) -> Result<&'a TypeDefinition<'a, String>, AnalyzerResult> {
-    //     Analyzer::lookup_field_in_object_type_definition(type_definition, field_name.clone())
-    //         .ok_or(AnalyzerResult::DefinitionError(format!(
-    //             "Field {} not found",
-    //             field_name
-    //         )))
-    //         .and_then(|field_definition| {
-    //             Analyzer::lookup_type_name_from_field_definition(field_definition).ok_or(
-    //                 AnalyzerResult::DefinitionError(format!("Field {} not found", field_name)),
-    //             )
-    //         })
-    //         .and_then(|field_type_name| {
-    //             Analyzer::lookup_graphql_type_definition(schema, field_type_name.clone()).ok_or(
-    //                 AnalyzerResult::DefinitionError(format!(
-    //                     "Definition of type {} of field {} not found",
-    //                     field_type_name, field_name
-    //                 )),
-    //             )
-    //         })
     // }
 }

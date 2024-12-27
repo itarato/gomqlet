@@ -2,8 +2,24 @@ use std::fs::File;
 
 use serde_json::Value;
 
+pub enum FieldType {
+    NonNull(Box<FieldType>),
+    List(Box<FieldType>),
+    Object(String),
+    Enum(String),
+    Interface(String),
+    Scalar,
+    Input(String),
+    Union(String),
+}
+
 pub struct Field {
     pub name: String,
+    pub field_type: FieldType,
+}
+
+impl Field {
+    fn from_json_value(node: Value) -> Field {}
 }
 
 pub struct ObjectType {
@@ -29,6 +45,19 @@ impl Type {
                     }
                 })
                 .collect(),
+        }
+    }
+
+    pub fn field(&self, name: String) -> Option<&Field> {
+        match self {
+            Type::Object(object_type) => {
+                for field in &object_type.fields {
+                    if field.name == name {
+                        return Some(field);
+                    }
+                }
+                None
+            }
         }
     }
 }
@@ -110,5 +139,35 @@ impl Schema {
                 }
             })
             .collect()
+    }
+
+    fn field_type_defition_of_parent_type_definition(
+        &self,
+        type_definition: &Type,
+        field_name: String,
+    ) -> Result<Type, String> {
+        type_definition
+            .field(field_name.clone())
+            .ok_or(format!("Field {} not found", field_name))
+            .and_then(|field_definition| {
+                Analyzer::lookup_type_name_from_field_definition(field_definition)
+                    .ok_or(format!("Field {} not found", field_name))
+            })
+            .and_then(|field_type_name| {
+                Analyzer::lookup_graphql_type_definition(schema, field_type_name.clone()).ok_or(
+                    format!(
+                        "Definition of type {} of field {} not found",
+                        field_type_name, field_name
+                    ),
+                )
+            })
+    }
+
+    fn lookup_type_name_from_type<'a>(ty: &'a Type<'a, String>) -> Option<String> {
+        match &ty {
+            Type::NamedType(name) => Some(name.clone()),
+            Type::ListType(list) => Analyzer::lookup_type_name_from_type(list),
+            Type::NonNullType(non_null_ty) => Analyzer::lookup_type_name_from_type(non_null_ty),
+        }
     }
 }
