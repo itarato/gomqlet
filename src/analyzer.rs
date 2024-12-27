@@ -1,7 +1,7 @@
 use crate::{
     ast::{ArgList, FieldList, Query, Root},
     parser::{ParseError, Parser},
-    schema::{Schema, Type},
+    schema::{Field, Schema, Type},
     tokenizer::Token,
 };
 
@@ -84,9 +84,21 @@ impl Analyzer {
             }
 
             if let Some(arglist) = &field.arglist {
-                let result = Analyzer::find_pos_in_arglist(arglist, pos);
-                if result.is_some() {
-                    return result;
+                if pos >= arglist.start_pos && pos <= arglist.end_pos {
+                    match scope.field(field.name.original.clone()) {
+                        Some(field_def) => {
+                            let result = Analyzer::find_pos_in_arglist(arglist, pos, field_def);
+                            if result.is_some() {
+                                return result;
+                            }
+                        }
+                        None => {
+                            return Some(AnalyzerResult::DefinitionError(format!(
+                                "Invalid field {}",
+                                field.name.original
+                            )))
+                        }
+                    }
                 }
             }
 
@@ -112,7 +124,7 @@ impl Analyzer {
         ))
     }
 
-    fn find_pos_in_arglist(arglist: &ArgList, pos: usize) -> Option<AnalyzerResult> {
+    fn find_pos_in_arglist(arglist: &ArgList, pos: usize, scope: &Field) -> Option<AnalyzerResult> {
         if pos >= arglist.start_pos && pos < arglist.end_pos {
             // Inside arglist.
 
@@ -128,22 +140,24 @@ impl Analyzer {
                 if pos >= arg.key.pos && pos <= arg.key.end_pos() {
                     // On arg key.
                     debug!("On key: {}", arg.key.original);
-                    todo!("On-key autocomplete");
-                    return Some(AnalyzerResult::Empty);
+                    return Some(AnalyzerResult::Autocomplete(
+                        scope.arg_names(&arg.key.original),
+                    ));
                 }
 
                 if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
                     // On arg value.
                     debug!("On arg value: {:?}", arg.value);
-                    todo!("On-value autocomplete");
+                    // todo!("On-value autocomplete");
                     return Some(AnalyzerResult::Empty);
                 }
             }
 
             // In arglist -> offer key.
             debug!("On arglist.");
-            todo!("Arglist autocomplete");
-            return Some(AnalyzerResult::Empty);
+            return Some(AnalyzerResult::Autocomplete(
+                scope.arg_names(&String::new()),
+            ));
         }
 
         None

@@ -2,9 +2,9 @@ use std::fs::File;
 
 use serde_json::Value;
 
-pub enum FieldType {
-    NonNull(Box<FieldType>),
-    List(Box<FieldType>),
+pub enum TypeClass {
+    NonNull(Box<TypeClass>),
+    List(Box<TypeClass>),
     Object(String),
     Enum(String),
     Interface(String),
@@ -13,24 +13,30 @@ pub enum FieldType {
     Union(String),
 }
 
-impl FieldType {
+impl TypeClass {
     fn underlying_type_name(&self) -> Option<String> {
         match self {
-            FieldType::Object(name) => Some(name.clone()),
-            FieldType::Enum(name) => Some(name.clone()),
-            FieldType::Interface(name) => Some(name.clone()),
-            FieldType::Scalar(name) => Some(name.clone()),
-            FieldType::Input(name) => Some(name.clone()),
-            FieldType::Union(name) => Some(name.clone()),
-            FieldType::NonNull(inner) => inner.underlying_type_name(),
-            FieldType::List(inner) => inner.underlying_type_name(),
+            TypeClass::Object(name) => Some(name.clone()),
+            TypeClass::Enum(name) => Some(name.clone()),
+            TypeClass::Interface(name) => Some(name.clone()),
+            TypeClass::Scalar(name) => Some(name.clone()),
+            TypeClass::Input(name) => Some(name.clone()),
+            TypeClass::Union(name) => Some(name.clone()),
+            TypeClass::NonNull(inner) => inner.underlying_type_name(),
+            TypeClass::List(inner) => inner.underlying_type_name(),
         }
     }
 }
 
+pub struct Arg {
+    name: String,
+    arg_type: TypeClass,
+}
+
 pub struct Field {
     pub name: String,
-    pub field_type: FieldType,
+    field_type: TypeClass,
+    args: Vec<Arg>,
 }
 
 impl Field {
@@ -43,49 +49,63 @@ impl Field {
         Field {
             name,
             field_type: Field::resolve_type(&node.as_object().unwrap()["type"]),
+            args: Field::resolve_args(node.as_object().unwrap()["args"].as_array().unwrap()),
         }
     }
 
-    fn resolve_type(node: &Value) -> FieldType {
+    pub fn arg_names(&self, prefix: &String) -> Vec<String> {
+        self.args
+            .iter()
+            .filter_map(|arg| {
+                if arg.name.starts_with(prefix) {
+                    Some(arg.name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    fn resolve_type(node: &Value) -> TypeClass {
         let kind = node.as_object().unwrap()["kind"].as_str().unwrap();
         match kind {
-            "NON_NULL" => FieldType::NonNull(Box::new(Field::resolve_type(
+            "NON_NULL" => TypeClass::NonNull(Box::new(Field::resolve_type(
                 &node.as_object().unwrap()["ofType"],
             ))),
-            "LIST" => FieldType::List(Box::new(Field::resolve_type(
+            "LIST" => TypeClass::List(Box::new(Field::resolve_type(
                 &node.as_object().unwrap()["ofType"],
             ))),
-            "OBJECT" => FieldType::Object(
+            "OBJECT" => TypeClass::Object(
                 node.as_object().unwrap()["name"]
                     .as_str()
                     .unwrap()
                     .to_string(),
             ),
-            "INTERFACE" => FieldType::Interface(
+            "INTERFACE" => TypeClass::Interface(
                 node.as_object().unwrap()["name"]
                     .as_str()
                     .unwrap()
                     .to_string(),
             ),
-            "SCALAR" => FieldType::Scalar(
+            "SCALAR" => TypeClass::Scalar(
                 node.as_object().unwrap()["name"]
                     .as_str()
                     .unwrap()
                     .to_string(),
             ),
-            "INPUT_OBJECT" => FieldType::Input(
+            "INPUT_OBJECT" => TypeClass::Input(
                 node.as_object().unwrap()["name"]
                     .as_str()
                     .unwrap()
                     .to_string(),
             ),
-            "ENUM" => FieldType::Enum(
+            "ENUM" => TypeClass::Enum(
                 node.as_object().unwrap()["name"]
                     .as_str()
                     .unwrap()
                     .to_string(),
             ),
-            "UNION" => FieldType::Union(
+            "UNION" => TypeClass::Union(
                 node.as_object().unwrap()["name"]
                     .as_str()
                     .unwrap()
@@ -93,6 +113,19 @@ impl Field {
             ),
             _ => unimplemented!("Unmapped field type: {}", kind),
         }
+    }
+
+    fn resolve_args(raw_args: &Vec<Value>) -> Vec<Arg> {
+        raw_args
+            .iter()
+            .map(|raw_arg| Arg {
+                name: raw_arg.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+                arg_type: Field::resolve_type(&raw_arg.as_object().unwrap()["type"]),
+            })
+            .collect()
     }
 }
 
@@ -210,6 +243,7 @@ impl Schema {
 
                         Some(Type::Object(ObjectType { name, fields }))
                     }
+                    // TODO: handle other types!
                     _ => None,
                 }
             })
