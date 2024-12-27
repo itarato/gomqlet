@@ -149,6 +149,11 @@ impl Analyzer {
                     // On arg value.
                     debug!("On arg value: {:?}", arg.value);
                     // todo!("On-value autocomplete");
+
+                    // TODO: when the cursor is after the last keyword, the replacement `Missing` type has no length,
+                    //       so this function cannot identify it and offer values options.
+                    //       Maybe make the missing value own a length (between colon and next token)?
+
                     return Some(AnalyzerResult::Empty);
                 }
             }

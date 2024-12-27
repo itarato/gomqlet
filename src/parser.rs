@@ -172,6 +172,16 @@ impl Parser {
                 self.ptr += 1;
                 Ok(ast::ParamValue::Simple(token.unwrap()))
             }
+            Some(Token {
+                kind: TokenKind::CloseParen,
+                pos,
+                ..
+            })
+            | Some(Token {
+                kind: TokenKind::Comma,
+                pos,
+                ..
+            }) => Ok(ast::ParamValue::Missing(pos)),
             _ => Err(self.parse_error(
                 ParseErrorScope::ArgListValue,
                 "Unexpected arglist value type",

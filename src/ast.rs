@@ -41,19 +41,23 @@ pub struct ParamKeyValuePair {
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParamValue {
     Simple(Token),
-    // TODO: object, list
+    // For error correction reasons a placeholder type.
+    Missing(usize), // pos (representing start and end).
+                    // TODO: object, list
 }
 
 impl ParamValue {
     pub fn start_pos(&self) -> usize {
         match self {
             ParamValue::Simple(token) => token.pos,
+            ParamValue::Missing(pos) => *pos,
         }
     }
 
     pub fn end_pos(&self) -> usize {
         match self {
             ParamValue::Simple(token) => token.end_pos(),
+            ParamValue::Missing(pos) => *pos,
         }
     }
 }
