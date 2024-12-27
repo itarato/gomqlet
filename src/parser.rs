@@ -104,6 +104,10 @@ impl Parser {
 
         let mut params = vec![];
         loop {
+            if self.is_next_token_kind(TokenKind::CloseParen) {
+                break;
+            }
+
             let key = if let Some(Token {
                 kind: TokenKind::Keyword(_),
                 ..
@@ -307,6 +311,22 @@ mod test {
             query.field_list.fields[0].arglist.as_ref().unwrap().params[0]
                 .key
                 .original,
+        );
+    }
+
+    #[test]
+    fn test_empty_arglist() {
+        let Root::Query(query) = parse("{ users() }").unwrap();
+
+        assert_eq!(1, query.field_list.fields.len());
+        assert_eq!(
+            0,
+            query.field_list.fields[0]
+                .arglist
+                .as_ref()
+                .unwrap()
+                .params
+                .len()
         );
     }
 
