@@ -66,79 +66,75 @@ impl Analyzer {
             }
         };
 
-        todo!()
-        // Analyzer::find_pos_in_field_list(&query.field_list, pos, query_scope)
-        //     .unwrap_or(AnalyzerResult::Empty)
+        Analyzer::find_pos_in_field_list(&query.field_list, pos, query_scope)
+            .unwrap_or(AnalyzerResult::Empty)
     }
 
-    // fn find_pos_in_field_list<'a>(
-    //     field_list: &FieldList,
-    //     pos: usize,
-    //     scope: &'a TypeDefinition<'a, String>,
-    // ) -> Option<AnalyzerResult> {
-    //     if pos < field_list.start_pos || pos > field_list.end_pos {
-    //         // Outside of the whole query.
-    //         return None;
-    //     }
+    fn find_pos_in_field_list(
+        field_list: &FieldList,
+        pos: usize,
+        scope: &Type,
+    ) -> Option<AnalyzerResult> {
+        if pos < field_list.start_pos || pos > field_list.end_pos {
+            // Outside of the whole query.
+            return None;
+        }
 
-    //     for field in &field_list.fields {
-    //         if pos > field.end_pos {
-    //             continue;
-    //         }
+        for field in &field_list.fields {
+            if pos > field.end_pos {
+                continue;
+            }
 
-    //         if pos < field.start_pos {
-    //             break;
-    //         }
+            if pos < field.start_pos {
+                break;
+            }
 
-    //         // On field.
-    //         if pos >= field.name.pos && pos <= field.name.end_pos() {
-    //             // On the field name.
-    //             debug!("On field name: {}", field.name.original);
-    //             return Some(AnalyzerResult::Autocomplete(
-    //                 Analyzer::lookup_field_name_strings_of_type_definition(
-    //                     scope,
-    //                     field.name.original.clone(),
-    //                 ),
-    //             ));
-    //         }
+            // On field.
+            if pos >= field.name.pos && pos <= field.name.end_pos() {
+                // On the field name.
+                debug!("On field name: {}", field.name.original);
+                return Some(AnalyzerResult::Autocomplete(
+                    scope.field_names(field.name.original.clone()),
+                ));
+            }
 
-    //         if let Some(arglist) = &field.arglist {
-    //             let result = Analyzer::find_pos_in_arglist(arglist, pos);
-    //             if result.is_some() {
-    //                 return result;
-    //             }
-    //         }
+            if let Some(arglist) = &field.arglist {
+                let result = Analyzer::find_pos_in_arglist(arglist, pos);
+                if result.is_some() {
+                    return result;
+                }
+            }
 
-    //         if let Some(field_list) = &field.field_list {
-    //             let subfield_type_definition =
-    //                 match Analyzer::lookup_field_type_defition_of_parent_type_definition(
-    //                     schema,
-    //                     scope,
-    //                     field.name.original.clone(),
-    //                 ) {
-    //                     Ok(subfield_type_definition) => subfield_type_definition,
-    //                     Err(error) => return Some(error),
-    //                 };
+            if let Some(field_list) = &field.field_list {
+                let subfield_type_definition =
+                    match Analyzer::lookup_field_type_defition_of_parent_type_definition(
+                        schema,
+                        scope,
+                        field.name.original.clone(),
+                    ) {
+                        Ok(subfield_type_definition) => subfield_type_definition,
+                        Err(error) => return Some(error),
+                    };
 
-    //             let result = Analyzer::find_pos_in_field_list(
-    //                 field_list,
-    //                 pos,
-    //                 schema,
-    //                 subfield_type_definition,
-    //             );
-    //             if result.is_some() {
-    //                 return result;
-    //             }
-    //         }
+                let result = Analyzer::find_pos_in_field_list(
+                    field_list,
+                    pos,
+                    schema,
+                    subfield_type_definition,
+                );
+                if result.is_some() {
+                    return result;
+                }
+            }
 
-    //         return Some(AnalyzerResult::Empty);
-    //     }
+            return Some(AnalyzerResult::Empty);
+        }
 
-    //     // In query but not on fields. -> AC can offer fields.
-    //     Some(AnalyzerResult::Autocomplete(
-    //         Analyzer::lookup_field_name_strings_of_type_definition(scope, String::new()),
-    //     ))
-    // }
+        // In query but not on fields. -> AC can offer fields.
+        Some(AnalyzerResult::Autocomplete(
+            scope.field_names(String::new()),
+        ))
+    }
 
     // fn find_pos_in_arglist(arglist: &ArgList, pos: usize) -> Option<AnalyzerResult> {
     //     if pos >= arglist.start_pos && pos < arglist.end_pos {
@@ -206,26 +202,6 @@ impl Analyzer {
     //         Type::ListType(list) => Analyzer::lookup_type_name_from_type(list),
     //         Type::NonNullType(non_null_ty) => Analyzer::lookup_type_name_from_type(non_null_ty),
     //     }
-    // }
-
-    // fn lookup_field_name_strings_of_type_definition<'a>(
-    //     type_definition: &'a TypeDefinition<'a, String>,
-    //     prefix: String,
-    // ) -> Vec<String> {
-    //     let mut name_strings = vec![];
-
-    //     match type_definition {
-    //         TypeDefinition::Object(object) => {
-    //             for field in &object.fields {
-    //                 if field.name.starts_with(&prefix) {
-    //                     name_strings.push(field.name.clone());
-    //                 }
-    //             }
-    //         }
-    //         _ => {}
-    //     }
-
-    //     name_strings
     // }
 
     // fn lookup_field_type_defition_of_parent_type_definition<'a>(

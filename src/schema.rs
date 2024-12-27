@@ -15,6 +15,24 @@ pub enum Type {
     Object(ObjectType),
 }
 
+impl Type {
+    pub fn field_names(&self, prefix: String) -> Vec<String> {
+        match self {
+            Type::Object(object_type) => object_type
+                .fields
+                .iter()
+                .filter_map(|field| {
+                    if field.name.starts_with(&prefix) {
+                        Some(field.name.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        }
+    }
+}
+
 pub struct Schema {
     types: Vec<Type>,
     pub query_root_name: String,
