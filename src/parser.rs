@@ -119,10 +119,9 @@ impl Parser {
             };
             self.ptr += 1;
 
-            if !self.is_next_token_kind(TokenKind::Colon) {
-                return Err(self.parse_error(ParseErrorScope::ArgList, "Missing colon"));
-            }
-            self.ptr += 1;
+            if self.is_next_token_kind(TokenKind::Colon) {
+                self.ptr += 1;
+            } // Else is omitted due to error handling (assume it's missing for now).
 
             let value = self.parse_arglist_value()?;
 
@@ -172,6 +171,7 @@ impl Parser {
                 self.ptr += 1;
                 Ok(ast::ParamValue::Simple(token.unwrap()))
             }
+            // Error handling:
             Some(Token {
                 kind: TokenKind::CloseParen,
                 pos,
