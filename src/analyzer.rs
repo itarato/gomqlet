@@ -1,25 +1,9 @@
-use std::fs::File;
-
-use serde_json::Value;
-
 use crate::{
     ast::{ArgList, FieldList, Query, Root},
     parser::{ParseError, Parser},
     schema::{Schema, Type},
     tokenizer::Token,
 };
-
-/*
-
-query {
-    users(first: 10) {
-        id
-        name
-        address
-    }
-}
-
-*/
 
 #[derive(Debug)]
 pub enum AnalyzerResult {
