@@ -35,7 +35,10 @@ pub struct Field {
 
 impl Field {
     fn from_json_value(node: &Value) -> Field {
-        let name = node.as_object().unwrap()["name"].to_string();
+        let name = node.as_object().unwrap()["name"]
+            .as_str()
+            .unwrap()
+            .to_string();
 
         Field {
             name,
@@ -147,6 +150,8 @@ impl Schema {
         let query_root_name = schema.as_object().unwrap()["data"].as_object().unwrap()["__schema"]
             .as_object()
             .unwrap()["queryType"]
+            .as_object()
+            .unwrap()["name"]
             .as_str()
             .unwrap()
             .to_string();
@@ -155,6 +160,8 @@ impl Schema {
             ["__schema"]
             .as_object()
             .unwrap()["mutationType"]
+            .as_object()
+            .unwrap()["name"]
             .as_str()
             .unwrap()
             .to_string();
@@ -209,11 +216,7 @@ impl Schema {
             .collect()
     }
 
-    fn field_type_defition_of_parent_type_definition(
-        &self,
-        type_definition: &Type,
-        field_name: String,
-    ) -> Result<&Type, String> {
+    pub fn field_type(&self, type_definition: &Type, field_name: String) -> Result<&Type, String> {
         type_definition
             .field(field_name.clone())
             .ok_or(format!("Field {} not found", field_name))

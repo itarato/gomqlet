@@ -66,11 +66,12 @@ impl Analyzer {
             }
         };
 
-        Analyzer::find_pos_in_field_list(&query.field_list, pos, query_scope)
+        self.find_pos_in_field_list(&query.field_list, pos, query_scope)
             .unwrap_or(AnalyzerResult::Empty)
     }
 
     fn find_pos_in_field_list(
+        &self,
         field_list: &FieldList,
         pos: usize,
         scope: &Type,
@@ -107,21 +108,12 @@ impl Analyzer {
 
             if let Some(field_list) = &field.field_list {
                 let subfield_type_definition =
-                    match Analyzer::lookup_field_type_defition_of_parent_type_definition(
-                        schema,
-                        scope,
-                        field.name.original.clone(),
-                    ) {
+                    match self.schema.field_type(scope, field.name.original.clone()) {
                         Ok(subfield_type_definition) => subfield_type_definition,
-                        Err(error) => return Some(error),
+                        Err(error) => return Some(AnalyzerResult::DefinitionError(error)),
                     };
 
-                let result = Analyzer::find_pos_in_field_list(
-                    field_list,
-                    pos,
-                    schema,
-                    subfield_type_definition,
-                );
+                let result = self.find_pos_in_field_list(field_list, pos, subfield_type_definition);
                 if result.is_some() {
                     return result;
                 }
@@ -136,54 +128,40 @@ impl Analyzer {
         ))
     }
 
-    // fn find_pos_in_arglist(arglist: &ArgList, pos: usize) -> Option<AnalyzerResult> {
-    //     if pos >= arglist.start_pos && pos < arglist.end_pos {
-    //         // Inside arglist.
+    fn find_pos_in_arglist(arglist: &ArgList, pos: usize) -> Option<AnalyzerResult> {
+        if pos >= arglist.start_pos && pos < arglist.end_pos {
+            // Inside arglist.
 
-    //         for arg in &arglist.params {
-    //             if pos > arg.end_pos {
-    //                 continue;
-    //             }
+            for arg in &arglist.params {
+                if pos > arg.end_pos {
+                    continue;
+                }
 
-    //             if pos < arg.start_pos {
-    //                 break;
-    //             }
+                if pos < arg.start_pos {
+                    break;
+                }
 
-    //             if pos >= arg.key.pos && pos <= arg.key.end_pos() {
-    //                 // On arg key.
-    //                 debug!("On key: {}", arg.key.original);
-    //                 todo!("On-key autocomplete");
-    //                 return Some(AnalyzerResult::Empty);
-    //             }
+                if pos >= arg.key.pos && pos <= arg.key.end_pos() {
+                    // On arg key.
+                    debug!("On key: {}", arg.key.original);
+                    todo!("On-key autocomplete");
+                    return Some(AnalyzerResult::Empty);
+                }
 
-    //             if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
-    //                 // On arg value.
-    //                 debug!("On arg value: {:?}", arg.value);
-    //                 todo!("On-value autocomplete");
-    //                 return Some(AnalyzerResult::Empty);
-    //             }
-    //         }
+                if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
+                    // On arg value.
+                    debug!("On arg value: {:?}", arg.value);
+                    todo!("On-value autocomplete");
+                    return Some(AnalyzerResult::Empty);
+                }
+            }
 
-    //         // In arglist -> offer key.
-    //         debug!("On arglist.");
-    //         todo!("Arglist autocomplete");
-    //         return Some(AnalyzerResult::Empty);
-    //     }
+            // In arglist -> offer key.
+            debug!("On arglist.");
+            todo!("Arglist autocomplete");
+            return Some(AnalyzerResult::Empty);
+        }
 
-    //     None
-    // }
-
-    // fn lookup_type_name_from_field_definition<'a>(
-    //     field_definition: &'a Field<'a, String>,
-    // ) -> Option<String> {
-    //     Analyzer::lookup_type_name_from_type(&field_definition.field_type)
-    // }
-
-    // fn lookup_type_name_from_type<'a>(ty: &'a Type<'a, String>) -> Option<String> {
-    //     match &ty {
-    //         Type::NamedType(name) => Some(name.clone()),
-    //         Type::ListType(list) => Analyzer::lookup_type_name_from_type(list),
-    //         Type::NonNullType(non_null_ty) => Analyzer::lookup_type_name_from_type(non_null_ty),
-    //     }
-    // }
+        None
+    }
 }
