@@ -8,9 +8,24 @@ pub enum FieldType {
     Object(String),
     Enum(String),
     Interface(String),
-    Scalar,
+    Scalar(String),
     Input(String),
     Union(String),
+}
+
+impl FieldType {
+    fn underlying_type_name(&self) -> Option<String> {
+        match self {
+            FieldType::Object(name) => Some(name.clone()),
+            FieldType::Enum(name) => Some(name.clone()),
+            FieldType::Interface(name) => Some(name.clone()),
+            FieldType::Scalar(name) => Some(name.clone()),
+            FieldType::Input(name) => Some(name.clone()),
+            FieldType::Union(name) => Some(name.clone()),
+            FieldType::NonNull(inner) => inner.underlying_type_name(),
+            FieldType::List(inner) => inner.underlying_type_name(),
+        }
+    }
 }
 
 pub struct Field {
@@ -19,7 +34,63 @@ pub struct Field {
 }
 
 impl Field {
-    fn from_json_value(node: Value) -> Field {}
+    fn from_json_value(node: &Value) -> Field {
+        let name = node.as_object().unwrap()["name"].to_string();
+
+        Field {
+            name,
+            field_type: Field::resolve_type(&node.as_object().unwrap()["type"]),
+        }
+    }
+
+    fn resolve_type(node: &Value) -> FieldType {
+        let kind = node.as_object().unwrap()["kind"].as_str().unwrap();
+        match kind {
+            "NON_NULL" => FieldType::NonNull(Box::new(Field::resolve_type(
+                &node.as_object().unwrap()["ofType"],
+            ))),
+            "LIST" => FieldType::List(Box::new(Field::resolve_type(
+                &node.as_object().unwrap()["ofType"],
+            ))),
+            "OBJECT" => FieldType::Object(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "INTERFACE" => FieldType::Interface(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "SCALAR" => FieldType::Scalar(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "INPUT_OBJECT" => FieldType::Input(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "ENUM" => FieldType::Enum(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "UNION" => FieldType::Union(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            _ => unimplemented!("Unmapped field type: {}", kind),
+        }
+    }
 }
 
 pub struct ObjectType {
@@ -127,10 +198,7 @@ impl Schema {
                             .as_array()
                             .unwrap()
                             .iter()
-                            .map(|field_def| {
-                                let field_name = field_def.as_object().unwrap()["name"].to_string();
-                                Field { name: field_name }
-                            })
+                            .map(|field_def| Field::from_json_value(field_def))
                             .collect();
 
                         Some(Type::Object(ObjectType { name, fields }))
@@ -145,29 +213,21 @@ impl Schema {
         &self,
         type_definition: &Type,
         field_name: String,
-    ) -> Result<Type, String> {
+    ) -> Result<&Type, String> {
         type_definition
             .field(field_name.clone())
             .ok_or(format!("Field {} not found", field_name))
             .and_then(|field_definition| {
-                Analyzer::lookup_type_name_from_field_definition(field_definition)
-                    .ok_or(format!("Field {} not found", field_name))
+                field_definition
+                    .field_type
+                    .underlying_type_name()
+                    .ok_or(format!("Field type of {} not found", field_name))
             })
             .and_then(|field_type_name| {
-                Analyzer::lookup_graphql_type_definition(schema, field_type_name.clone()).ok_or(
-                    format!(
-                        "Definition of type {} of field {} not found",
-                        field_type_name, field_name
-                    ),
-                )
+                self.type_definition(field_type_name.clone()).ok_or(format!(
+                    "Definition of type {} of field {} not found",
+                    field_type_name, field_name
+                ))
             })
-    }
-
-    fn lookup_type_name_from_type<'a>(ty: &'a Type<'a, String>) -> Option<String> {
-        match &ty {
-            Type::NamedType(name) => Some(name.clone()),
-            Type::ListType(list) => Analyzer::lookup_type_name_from_type(list),
-            Type::NonNullType(non_null_ty) => Analyzer::lookup_type_name_from_type(non_null_ty),
-        }
     }
 }
