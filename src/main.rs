@@ -22,6 +22,7 @@ mod ast;
 mod editor;
 mod parser;
 mod printer;
+mod schema;
 mod terminal_handler;
 mod text;
 mod tokenizer;

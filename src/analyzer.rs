@@ -5,6 +5,7 @@ use serde_json::Value;
 use crate::{
     ast::{ArgList, FieldList, Query, Root},
     parser::{ParseError, Parser},
+    schema::{Schema, Type},
     tokenizer::Token,
 };
 
@@ -29,51 +30,13 @@ pub enum AnalyzerResult {
 }
 
 pub struct Analyzer {
-    schema_types: Vec<Value>,
-    query_root_name: String,
-    mutation_root_name: String,
+    schema: Schema,
 }
 
 impl Analyzer {
     pub fn new() -> Analyzer {
-        let schema: Value =
-            serde_json::from_reader(File::open("./misc/shopify.json").unwrap()).unwrap();
-
-        let query_root_name = schema.as_object().unwrap()["data"].as_object().unwrap()["__schema"]
-            .as_object()
-            .unwrap()["queryType"]
-            .as_str()
-            .unwrap()
-            .to_string();
-
-        let mutation_root_name = schema.as_object().unwrap()["data"].as_object().unwrap()
-            ["__schema"]
-            .as_object()
-            .unwrap()["mutationType"]
-            .as_str()
-            .unwrap()
-            .to_string();
-
-        let schema_types = schema
-            .as_object()
-            .unwrap()
-            .get("data")
-            .unwrap()
-            .as_object()
-            .unwrap()
-            .get("__schema")
-            .unwrap()
-            .as_object()
-            .unwrap()
-            .get("types")
-            .unwrap()
-            .as_array()
-            .unwrap();
-
         Analyzer {
-            schema_types: schema_types.to_owned(),
-            query_root_name,
-            mutation_root_name,
+            schema: Schema::new(),
         }
     }
 
@@ -93,7 +56,10 @@ impl Analyzer {
     }
 
     fn find_pos_in_query(&self, query: &Query, pos: usize) -> AnalyzerResult {
-        let query_scope = match self.lookup_graphql_type_definition(self.query_root_name.clone()) {
+        let query_scope = match self
+            .schema
+            .type_definition(self.schema.query_root_name.clone())
+        {
             Some(scope) => scope,
             None => {
                 return AnalyzerResult::DefinitionError("Query is not found in the schema".into())
@@ -210,26 +176,6 @@ impl Analyzer {
 
     //     None
     // }
-
-    fn lookup_graphql_type_definition(&self, name: String) -> Option<Value> {
-        for definition in self.schema_types {
-            match definition {
-                graphql_parser::schema::Definition::TypeDefinition(type_definition) => {
-                    match type_definition {
-                        TypeDefinition::Object(object) => {
-                            if object.name == name {
-                                return Some(type_definition);
-                            }
-                        }
-                        _ => continue,
-                    }
-                }
-                _ => continue,
-            }
-        }
-
-        None
-    }
 
     // fn lookup_field_in_object_type_definition<'a>(
     //     type_definition: &'a TypeDefinition<'a, String>,
