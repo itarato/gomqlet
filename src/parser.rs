@@ -7,6 +7,7 @@ pub enum ParseErrorScope {
     Field,
     ArgList,
     ArgListValue,
+    ArgListValueListType,
 }
 
 #[derive(Debug)]
@@ -190,6 +191,10 @@ impl Parser {
                 self.ptr += 1;
                 Ok(ast::ParamValue::Simple(token.unwrap()))
             }
+            Some(Token {
+                kind: TokenKind::OpenBracket,
+                ..
+            }) => Ok(ast::ParamValue::List(self.parse_arglist_value_list_type()?)),
             // Error handling:
             Some(Token {
                 kind: TokenKind::CloseParen,
@@ -206,6 +211,46 @@ impl Parser {
                 "Unexpected arglist value type",
             )),
         }
+    }
+
+    fn parse_arglist_value_list_type(&mut self) -> Result<ast::ListParamValue, ParseError> {
+        if !self.is_next_token_kind(TokenKind::OpenBracket) {
+            return Err(self.parse_error(
+                ParseErrorScope::ArgListValueListType,
+                "Expected list opening backet for list param value",
+            ));
+        }
+        let start_pos = self.peek_token().unwrap().pos;
+        self.ptr += 1;
+
+        let mut elems = vec![];
+        loop {
+            if self.is_next_token_kind(TokenKind::CloseBracket) {
+                break;
+            }
+
+            elems.push(self.parse_arglist_value()?);
+
+            if !self.is_next_token_kind(TokenKind::Comma) {
+                break;
+            }
+            self.ptr += 1;
+        }
+
+        if !self.is_next_token_kind(TokenKind::CloseBracket) {
+            return Err(self.parse_error(
+                ParseErrorScope::ArgListValueListType,
+                "Expected list closing backet for list param value",
+            ));
+        }
+        let end_pos = self.peek_token().unwrap().pos;
+        self.ptr += 1;
+
+        Ok(ast::ListParamValue {
+            start_pos,
+            end_pos,
+            elems,
+        })
     }
 
     fn parse_fields_subobject(&mut self) -> Result<FieldList, ParseError> {
@@ -361,8 +406,21 @@ mod test {
                 .len()
         );
         assert_eq!(
-            1,
-            query.field_list.fields[0].arglist.as_ref().unwrap().params[0].value
+            3,
+            query.field_list.fields[0].arglist.as_ref().unwrap().params[0]
+                .value
+                .as_list()
+                .elems
+                .len(),
+        );
+        assert_eq!(
+            "11".to_string(),
+            query.field_list.fields[0].arglist.as_ref().unwrap().params[0]
+                .value
+                .as_list()
+                .elems[0]
+                .as_simple()
+                .original,
         );
     }
 

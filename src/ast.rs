@@ -70,11 +70,25 @@ impl ParamValue {
             ParamValue::List(list) => list.end_pos,
         }
     }
+
+    pub fn as_list(&self) -> &ListParamValue {
+        match &self {
+            ParamValue::List(list) => list,
+            _ => panic!("Param value expected to be a list"),
+        }
+    }
+
+    pub fn as_simple(&self) -> &Token {
+        match &self {
+            ParamValue::Simple(token) => token,
+            _ => panic!("Param value expected to be a simple type"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ListParamValue {
-    start_pos: usize,
-    end_pos: usize,
-    elems: Vec<ParamValue>,
+    pub start_pos: usize,
+    pub end_pos: usize,
+    pub elems: Vec<ParamValue>,
 }
