@@ -291,7 +291,7 @@ mod test {
         tokenizer::Tokenizer,
     };
 
-    use super::{ParseError, Parser};
+    use super::Parser;
 
     #[test]
     fn test_empty() {

@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 use crate::{
-    analyzer::{self, AnalyzerResult},
+    analyzer::AnalyzerResult,
     terminal_handler::TerminalHandler,
     tokenizer::{Token, TokenKind},
     util::CoordUsize,

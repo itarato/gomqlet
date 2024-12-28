@@ -214,7 +214,6 @@ impl Schema {
                         return Some(ty);
                     }
                 }
-                _ => continue,
             }
         }
 
