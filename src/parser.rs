@@ -347,6 +347,26 @@ mod test {
     }
 
     #[test]
+    fn test_arglist_with_list_param() {
+        let query = parse_query("{ createUser(tags: [11, 22, 33]) }");
+
+        assert_eq!(1, query.field_list.fields.len());
+        assert_eq!(
+            1,
+            query.field_list.fields[0]
+                .arglist
+                .as_ref()
+                .unwrap()
+                .params
+                .len()
+        );
+        assert_eq!(
+            1,
+            query.field_list.fields[0].arglist.as_ref().unwrap().params[0].value
+        );
+    }
+
+    #[test]
     fn test_empty_arglist() {
         let query = parse_query("{ users() }");
 

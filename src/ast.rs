@@ -48,6 +48,7 @@ pub struct ParamKeyValuePair {
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParamValue {
     Simple(Token),
+    List(ListParamValue),
     // For error correction reasons a placeholder type.
     Missing(usize), // pos (representing start and end).
                     // TODO: object, list
@@ -58,6 +59,7 @@ impl ParamValue {
         match self {
             ParamValue::Simple(token) => token.pos,
             ParamValue::Missing(pos) => *pos,
+            ParamValue::List(list) => list.start_pos,
         }
     }
 
@@ -65,6 +67,14 @@ impl ParamValue {
         match self {
             ParamValue::Simple(token) => token.end_pos(),
             ParamValue::Missing(pos) => *pos,
+            ParamValue::List(list) => list.end_pos,
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ListParamValue {
+    start_pos: usize,
+    end_pos: usize,
+    elems: Vec<ParamValue>,
 }
