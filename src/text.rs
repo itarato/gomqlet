@@ -16,15 +16,19 @@ impl Text {
     }
 
     pub fn insert_new_line(&mut self) {
-        let fragment_to_split = self.lines[self.cursor.y][self.cursor.x..].to_owned();
+        let mut fragment_to_split = self.lines[self.cursor.y][self.cursor.x..].to_owned();
         self.lines
             .get_mut(self.cursor.y)
             .expect("Missing line")
             .truncate(self.cursor.x);
 
+        let previous_line_front_space_length = self.front_space_length(self.cursor.y);
+        let new_prefix = String::from_utf8(vec![b' '; previous_line_front_space_length]).unwrap();
+        fragment_to_split.insert_str(0, &new_prefix);
+
         self.lines.insert(self.cursor.y + 1, fragment_to_split);
 
-        self.cursor.x = 0;
+        self.cursor.x = previous_line_front_space_length;
         self.cursor.y += 1;
     }
 
@@ -144,5 +148,18 @@ impl Text {
         }
 
         pos + self.cursor.x
+    }
+
+    fn front_space_length(&self, line_index: usize) -> usize {
+        let mut n = 0;
+        for c in self.lines[line_index].chars() {
+            if c != ' ' {
+                break;
+            }
+
+            n += 1;
+        }
+
+        n
     }
 }
