@@ -362,6 +362,38 @@ mod test {
         );
     }
 
+    #[test]
+    fn test_arglist_without_arg_value() {
+        let query = parse_query("{ users(id: ) }");
+
+        assert_eq!(1, query.field_list.fields.len());
+        assert_eq!(
+            1,
+            query.field_list.fields[0]
+                .arglist
+                .as_ref()
+                .unwrap()
+                .params
+                .len()
+        );
+    }
+
+    #[test]
+    fn test_arglist_without_arg_value_and_colon() {
+        let query = parse_query("{ users(id ) }");
+
+        assert_eq!(1, query.field_list.fields.len());
+        assert_eq!(
+            1,
+            query.field_list.fields[0]
+                .arglist
+                .as_ref()
+                .unwrap()
+                .params
+                .len()
+        );
+    }
+
     fn parse_query(raw: &str) -> Query {
         let tokens = Tokenizer::tokenize(raw, false);
         let parser = Parser::new(tokens);
