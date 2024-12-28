@@ -1,5 +1,5 @@
 use crate::{
-    ast::{ArgList, FieldList, Query, Root},
+    ast::{ArgList, FieldList, Mutation, Query, Root},
     parser::{ParseError, Parser},
     schema::{Field, Schema, Type},
     tokenizer::Token,
@@ -36,6 +36,7 @@ impl Analyzer {
     fn find_pos_in_root(&self, root: &Root, pos: usize) -> AnalyzerResult {
         match root {
             Root::Query(query) => self.find_pos_in_query(query, pos),
+            Root::Mutation(mutation) => self.find_pos_in_mutation(mutation, pos),
         }
     }
 
@@ -51,6 +52,23 @@ impl Analyzer {
         };
 
         self.find_pos_in_field_list(&query.field_list, pos, query_scope)
+            .unwrap_or(AnalyzerResult::Empty)
+    }
+
+    fn find_pos_in_mutation(&self, query: &Mutation, pos: usize) -> AnalyzerResult {
+        let mutation_scope = match self
+            .schema
+            .type_definition(self.schema.mutation_root_name.clone())
+        {
+            Some(scope) => scope,
+            None => {
+                return AnalyzerResult::DefinitionError(
+                    "Mutation is not found in the schema".into(),
+                )
+            }
+        };
+
+        self.find_pos_in_field_list(&query.field_list, pos, mutation_scope)
             .unwrap_or(AnalyzerResult::Empty)
     }
 

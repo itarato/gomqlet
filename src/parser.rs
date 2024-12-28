@@ -28,10 +28,10 @@ impl Parser {
 
     pub fn parse(mut self) -> Result<ast::Root, ParseError> {
         if self.is_next_keyword("mutation") {
-            todo!("Handle mutation");
+            Ok(ast::Root::Mutation(self.parse_mutation()?))
+        } else {
+            Ok(ast::Root::Query(self.parse_query()?))
         }
-
-        Ok(ast::Root::Query(self.parse_query()?))
     }
 
     fn parse_query(&mut self) -> Result<ast::Query, ParseError> {
@@ -50,6 +50,25 @@ impl Parser {
         let field_list = self.parse_fields_subobject()?;
 
         Ok(ast::Query {
+            start_pos,
+            end_pos: field_list.end_pos,
+            field_list,
+        })
+    }
+
+    fn parse_mutation(&mut self) -> Result<ast::Mutation, ParseError> {
+        if !self.is_next_keyword("mutation") {
+            return Err(self.parse_error(ParseErrorScope::Query, "Empty mutation"));
+        }
+        let start_pos = self.peek_token().unwrap().pos;
+
+        self.ptr += 1;
+
+        // TODO variables.
+
+        let field_list = self.parse_fields_subobject()?;
+
+        Ok(ast::Mutation {
             start_pos,
             end_pos: field_list.end_pos,
             field_list,
@@ -267,25 +286,28 @@ impl Parser {
 
 #[cfg(test)]
 mod test {
-    use crate::{ast::Root, tokenizer::Tokenizer};
+    use crate::{
+        ast::{Query, Root},
+        tokenizer::Tokenizer,
+    };
 
     use super::{ParseError, Parser};
 
     #[test]
     fn test_empty() {
-        let Root::Query(query) = parse("{}").unwrap();
+        let query = parse_query("{}");
         assert_eq!(0, query.field_list.fields.len());
     }
 
     #[test]
     fn test_optional_query_keywors() {
-        let Root::Query(query) = parse("query { user }").unwrap();
+        let query = parse_query("query { user }");
         assert_eq!(1, query.field_list.fields.len());
     }
 
     #[test]
     fn test_plan_fields() {
-        let Root::Query(query) = parse("{ user company task }").unwrap();
+        let query = parse_query("{ user company task }");
         assert_eq!(3, query.field_list.fields.len());
         assert_eq!("user".to_string(), query.field_list.fields[0].name.original);
         assert_eq!(
@@ -297,7 +319,7 @@ mod test {
 
     #[test]
     fn test_nested_fields() {
-        let Root::Query(query) = parse("{ user company { location size } }").unwrap();
+        let query = parse_query("{ user company { location size } }");
         assert_eq!(2, query.field_list.fields.len());
         assert_eq!(
             2,
@@ -312,7 +334,7 @@ mod test {
 
     #[test]
     fn test_arglist() {
-        let Root::Query(query) = parse("{ user(id: \"gid://user/1\", order: ASC) }").unwrap();
+        let query = parse_query("{ user(id: \"gid://user/1\", order: ASC) }");
 
         assert_eq!(1, query.field_list.fields.len());
 
@@ -326,7 +348,7 @@ mod test {
 
     #[test]
     fn test_empty_arglist() {
-        let Root::Query(query) = parse("{ users() }").unwrap();
+        let query = parse_query("{ users() }");
 
         assert_eq!(1, query.field_list.fields.len());
         assert_eq!(
@@ -340,9 +362,13 @@ mod test {
         );
     }
 
-    fn parse(raw: &str) -> Result<Root, ParseError> {
+    fn parse_query(raw: &str) -> Query {
         let tokens = Tokenizer::tokenize(raw, false);
         let parser = Parser::new(tokens);
-        parser.parse()
+
+        match parser.parse().unwrap() {
+            Root::Query(query) => query,
+            _ => panic!("This must be called with a valid query"),
+        }
     }
 }

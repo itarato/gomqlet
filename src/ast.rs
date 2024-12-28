@@ -2,9 +2,16 @@ use crate::tokenizer::Token;
 
 pub enum Root {
     Query(Query),
+    Mutation(Mutation),
 }
 
 pub struct Query {
+    pub start_pos: usize,
+    pub end_pos: usize,
+    pub field_list: FieldList,
+}
+
+pub struct Mutation {
     pub start_pos: usize,
     pub end_pos: usize,
     pub field_list: FieldList,
