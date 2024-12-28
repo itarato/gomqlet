@@ -7,11 +7,15 @@ use crate::{
     util::CoordUsize,
 };
 
-pub struct Printer;
+pub struct Printer {
+    terminal_dimension: (usize, usize),
+}
 
 impl Printer {
     pub fn new() -> Printer {
-        Printer
+        Printer {
+            terminal_dimension: term_size::dimensions().unwrap(),
+        }
     }
 
     pub fn print(&self, tokens: Vec<Token>, cursor: CoordUsize, analyzer_result: AnalyzerResult) {
