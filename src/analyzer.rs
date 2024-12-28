@@ -166,7 +166,8 @@ impl Analyzer {
                 if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
                     // On arg value.
                     debug!("On arg value: {:?}", arg.value);
-                    // todo!("On-value autocomplete");
+
+                    todo!("On-value autocomplete (simple,list,object)");
 
                     // TODO: when the cursor is after the last keyword, the replacement `Missing` type has no length,
                     //       so this function cannot identify it and offer values options.
