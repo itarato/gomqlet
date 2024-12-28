@@ -7,6 +7,7 @@ use std::{
 
 use analyzer::Analyzer;
 use editor::{Editor, EditorInput};
+use net_ops::NetOps;
 use printer::Printer;
 use terminal_handler::TerminalHandler;
 use text::Text;
@@ -20,6 +21,7 @@ extern crate log;
 mod analyzer;
 mod ast;
 mod editor;
+mod net_ops;
 mod parser;
 mod printer;
 mod schema;
@@ -48,6 +50,7 @@ struct Gomqlet {
     printer: Printer,
     analyzer: Analyzer,
     content: Rc<RefCell<Text>>,
+    net_ops: NetOps,
 }
 
 impl Gomqlet {
@@ -60,6 +63,7 @@ impl Gomqlet {
             printer: Printer::new(),
             analyzer: Analyzer::new(),
             content,
+            net_ops: NetOps::new(),
         })
     }
 
@@ -82,6 +86,11 @@ impl Gomqlet {
             for cmd in cmds {
                 match cmd {
                     KeyboardInput::CtrlC | KeyboardInput::CtrlD => return Ok(()),
+                    KeyboardInput::Key(7) => {
+                        // CTRL-G
+                        self.net_ops
+                            .execute_graphql_operation(self.content.borrow().to_string());
+                    }
                     KeyboardInput::Key(code) => {
                         self.editor.parse_input(EditorInput::Char(code));
                     }
@@ -164,6 +173,8 @@ fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
     ]);
     let mut i = 0usize;
     let mut out = vec![];
+
+    // debug!("{:?}", buf);
 
     while i < len {
         if buf[i] == 27 {

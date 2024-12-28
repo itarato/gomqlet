@@ -15,6 +15,10 @@ impl Text {
         }
     }
 
+    pub fn to_string(&self) -> String {
+        self.lines.join("")
+    }
+
     pub fn insert_new_line(&mut self) {
         let mut fragment_to_split = self.lines[self.cursor.y][self.cursor.x..].to_owned();
         self.lines

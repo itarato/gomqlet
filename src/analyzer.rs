@@ -167,7 +167,8 @@ impl Analyzer {
                     // On arg value.
                     debug!("On arg value: {:?}", arg.value);
 
-                    todo!("On-value autocomplete (simple,list,object)");
+                    // TODO!!!
+                    // todo!("On-value autocomplete (simple,list,object)");
 
                     // TODO: when the cursor is after the last keyword, the replacement `Missing` type has no length,
                     //       so this function cannot identify it and offer values options.
