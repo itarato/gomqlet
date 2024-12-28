@@ -1,4 +1,4 @@
-use crate::tokenizer::Token;
+use crate::{schema::ObjectType, tokenizer::Token};
 
 pub enum Root {
     Query(Query),
@@ -31,6 +31,7 @@ pub struct Field {
     pub field_list: Option<FieldList>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct ArgList {
     pub start_pos: usize,
     pub end_pos: usize,
@@ -49,6 +50,7 @@ pub struct ParamKeyValuePair {
 pub enum ParamValue {
     Simple(Token),
     List(ListParamValue),
+    Object(ArgList),
     // For error correction reasons a placeholder type.
     Missing(usize), // pos (representing start and end).
                     // TODO: object, list
@@ -60,6 +62,7 @@ impl ParamValue {
             ParamValue::Simple(token) => token.pos,
             ParamValue::Missing(pos) => *pos,
             ParamValue::List(list) => list.start_pos,
+            ParamValue::Object(object) => object.start_pos,
         }
     }
 
@@ -68,6 +71,7 @@ impl ParamValue {
             ParamValue::Simple(token) => token.end_pos(),
             ParamValue::Missing(pos) => *pos,
             ParamValue::List(list) => list.end_pos,
+            ParamValue::Object(object) => object.end_pos,
         }
     }
 
@@ -75,6 +79,13 @@ impl ParamValue {
         match &self {
             ParamValue::List(list) => list,
             _ => panic!("Param value expected to be a list"),
+        }
+    }
+
+    pub fn as_object(&self) -> &ArgList {
+        match &self {
+            ParamValue::Object(object) => object,
+            _ => panic!("Param value expected to be an object"),
         }
     }
 

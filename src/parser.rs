@@ -91,7 +91,7 @@ impl Parser {
         let mut end_pos = name_token.end_pos();
 
         let arglist = if self.is_next_token_kind(TokenKind::OpenParen) {
-            let arglist = self.parse_arglist()?;
+            let arglist = self.parse_arglist(TokenKind::OpenParen, TokenKind::CloseParen)?;
             end_pos = arglist.end_pos;
             Some(arglist)
         } else {
@@ -115,8 +115,12 @@ impl Parser {
         })
     }
 
-    fn parse_arglist(&mut self) -> Result<ast::ArgList, ParseError> {
-        if !self.is_next_token_kind(TokenKind::OpenParen) {
+    fn parse_arglist(
+        &mut self,
+        open_token_kind: TokenKind,
+        close_token_kind: TokenKind,
+    ) -> Result<ast::ArgList, ParseError> {
+        if !self.is_next_token_kind(open_token_kind) {
             return Err(self.parse_error(ParseErrorScope::ArgList, "Missing open paren"));
         }
         let start_pos = self.peek_token().unwrap().pos;
@@ -124,7 +128,7 @@ impl Parser {
 
         let mut params = vec![];
         loop {
-            if self.is_next_token_kind(TokenKind::CloseParen) {
+            if self.is_next_token_kind(close_token_kind.clone()) {
                 break;
             }
 
@@ -160,7 +164,7 @@ impl Parser {
             }
         }
 
-        if !self.is_next_token_kind(TokenKind::CloseParen) {
+        if !self.is_next_token_kind(close_token_kind) {
             return Err(self.parse_error(ParseErrorScope::ArgList, "Missing close paren"));
         }
         let end_pos = self.peek_token().unwrap().end_pos();
@@ -195,6 +199,12 @@ impl Parser {
                 kind: TokenKind::OpenBracket,
                 ..
             }) => Ok(ast::ParamValue::List(self.parse_arglist_value_list_type()?)),
+            Some(Token {
+                kind: TokenKind::OpenBrace,
+                ..
+            }) => Ok(ast::ParamValue::Object(
+                self.parse_arglist(TokenKind::OpenBrace, TokenKind::CloseBrace)?,
+            )),
             // Error handling:
             Some(Token {
                 kind: TokenKind::CloseParen,
@@ -332,7 +342,7 @@ impl Parser {
 #[cfg(test)]
 mod test {
     use crate::{
-        ast::{Query, Root},
+        ast::{Mutation, Query, Root},
         tokenizer::Tokenizer,
     };
 
@@ -472,6 +482,28 @@ mod test {
         );
     }
 
+    #[test]
+    fn test_arglist_with_object() {
+        let mutation = parse_mutation(
+            "mutation { createUser(address: { city: \"London\", codes: [1, 2] }) { id } }",
+        );
+
+        assert_eq!(1, mutation.field_list.fields.len());
+
+        let args = mutation.field_list.fields[0].arglist.as_ref().unwrap();
+        assert_eq!(1, args.params.len());
+
+        let first_arg_value = args.params.get(0).unwrap().value.as_object();
+        assert_eq!(2, first_arg_value.params.len());
+        assert_eq!("city".to_string(), first_arg_value.params[0].key.original);
+        assert_eq!(
+            "\"London\"".to_string(),
+            first_arg_value.params[0].value.as_simple().original
+        );
+
+        assert_eq!(2, first_arg_value.params[1].value.as_list().elems.len());
+    }
+
     fn parse_query(raw: &str) -> Query {
         let tokens = Tokenizer::tokenize(raw, false);
         let parser = Parser::new(tokens);
@@ -479,6 +511,16 @@ mod test {
         match parser.parse().unwrap() {
             Root::Query(query) => query,
             _ => panic!("This must be called with a valid query"),
+        }
+    }
+
+    fn parse_mutation(raw: &str) -> Mutation {
+        let tokens = Tokenizer::tokenize(raw, false);
+        let parser = Parser::new(tokens);
+
+        match parser.parse().unwrap() {
+            Root::Mutation(mutation) => mutation,
+            _ => panic!("This must be called with a valid mutation"),
         }
     }
 }
