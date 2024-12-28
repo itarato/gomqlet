@@ -24,10 +24,12 @@ impl Token {
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum TokenKind {
-    OpenBrace,
-    CloseBrace,
-    OpenParen,
-    CloseParen,
+    OpenBrace,    // {
+    CloseBrace,   // }
+    OpenParen,    // (
+    CloseParen,   // )
+    OpenBracket,  // [
+    CloseBracket, // ]
     Colon,
     Comma,
     IntNumber(i32),
@@ -82,6 +84,14 @@ impl Tokenizer {
                 }
                 ')' => {
                     tokens.push(Token::new(TokenKind::CloseParen, pos, 1, ")".into()));
+                    pos += 1;
+                }
+                '[' => {
+                    tokens.push(Token::new(TokenKind::OpenBracket, pos, 1, "[".into()));
+                    pos += 1;
+                }
+                ']' => {
+                    tokens.push(Token::new(TokenKind::CloseBracket, pos, 1, "]".into()));
                     pos += 1;
                 }
                 ':' => {
@@ -252,6 +262,14 @@ mod test {
         assert_eq!(2, tokens.len());
         assert_eq!(TokenKind::OpenBrace, tokens[0].kind);
         assert_eq!(TokenKind::CloseBrace, tokens[1].kind);
+    }
+
+    #[test]
+    fn test_brackets() {
+        let tokens = Tokenizer::tokenize("[]", false);
+        assert_eq!(2, tokens.len());
+        assert_eq!(TokenKind::OpenBracket, tokens[0].kind);
+        assert_eq!(TokenKind::CloseBracket, tokens[1].kind);
     }
 
     #[test]
