@@ -7,6 +7,8 @@ use crate::{
     util::CoordUsize,
 };
 
+const POPUP_BAR_WIDTH_DIVIDER: usize = 3;
+
 pub struct Printer {
     terminal_dimension: (usize, usize),
 }
@@ -27,8 +29,7 @@ impl Printer {
         let output = self.colorize(tokens);
         buf.push_str(&output);
 
-        buf.push_str("\n\r---\n\r");
-        buf.push_str(&format!("{:?}", analyzer_result));
+        self.print_analyzer_result(&mut buf, analyzer_result);
 
         TerminalHandler::append_cursor_location(&mut buf, cursor.x, cursor.y);
         TerminalHandler::append_show_cursor(&mut buf);
@@ -38,6 +39,30 @@ impl Printer {
             .expect("Failed writing output");
 
         io::stdout().flush().expect("Cannot flush STDOUT");
+    }
+
+    fn print_analyzer_result(&self, buf: &mut String, analyzer_result: AnalyzerResult) {
+        match analyzer_result {
+            AnalyzerResult::Autocomplete(suggestions) => {
+                self.print_analyzer_result_suggestions(buf, suggestions)
+            }
+            AnalyzerResult::DefinitionError(error) => {}
+            AnalyzerResult::ParseError(error) => {}
+            AnalyzerResult::Empty => {}
+        }
+    }
+
+    fn print_analyzer_result_suggestions(&self, buf: &mut String, suggestions: Vec<String>) {
+        let popup_width = self.terminal_dimension.0 / POPUP_BAR_WIDTH_DIVIDER;
+
+        for i in 0..suggestions.len() {
+            TerminalHandler::append_cursor_location(
+                buf,
+                self.terminal_dimension.0 - popup_width,
+                i,
+            );
+            buf.push_str(&suggestions[i]);
+        }
     }
 
     fn colorize(&self, tokens: Vec<Token>) -> String {
