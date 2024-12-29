@@ -46,7 +46,9 @@ impl Printer {
             AnalyzerResult::Autocomplete(suggestions) => {
                 self.print_analyzer_result_suggestions(buf, suggestions)
             }
-            AnalyzerResult::DefinitionError(error) => {}
+            AnalyzerResult::DefinitionError(error) => {
+                self.print_analyzer_result_definition_error(buf, error)
+            }
             AnalyzerResult::ParseError(error) => {}
             AnalyzerResult::Empty => {}
         }
@@ -72,6 +74,42 @@ impl Printer {
         }
     }
 
+    fn print_analyzer_result_definition_error(&self, buf: &mut String, error: String) {
+        let mut i = 0usize;
+        let mut lines = vec![];
+
+        lines.push(format!(
+            "{: <width$}",
+            "\x1B[1mANALYZER ERROR",
+            width = self.terminal_width()
+        ));
+
+        while i < error.len() {
+            let line_width = (error.len() - i).min(self.terminal_width());
+
+            lines.push(format!(
+                "{: <width$}",
+                &error[0..line_width],
+                width = self.terminal_width()
+            ));
+
+            i += self.terminal_width();
+        }
+
+        for i in 0..lines.len() {
+            debug!("MOVE: {}", self.terminal_height() - i);
+            TerminalHandler::append_cursor_location(
+                buf,
+                0,
+                self.terminal_height() - lines.len() + i,
+            );
+
+            buf.push_str("\x1B[41m");
+            buf.push_str(&lines[i]);
+            buf.push_str("\x1B[0m");
+        }
+    }
+
     fn colorize(&self, tokens: Vec<Token>) -> String {
         tokens
             .into_iter()
@@ -84,5 +122,13 @@ impl Printer {
                 ),
             })
             .collect::<String>()
+    }
+
+    fn terminal_width(&self) -> usize {
+        self.terminal_dimension.0
+    }
+
+    fn terminal_height(&self) -> usize {
+        self.terminal_dimension.1
     }
 }
