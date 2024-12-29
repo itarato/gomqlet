@@ -2,6 +2,7 @@ use std::io::{self, Write};
 
 use crate::{
     analyzer::AnalyzerResult,
+    parser::ParseError,
     terminal_handler::TerminalHandler,
     tokenizer::{Token, TokenKind},
     util::CoordUsize,
@@ -49,7 +50,8 @@ impl Printer {
             AnalyzerResult::DefinitionError(error) => {
                 self.print_analyzer_result_definition_error(buf, error)
             }
-            AnalyzerResult::ParseError(error) => {}
+
+            AnalyzerResult::ParseError(error) => self.print_analyzer_result_parse_error(buf, error),
             AnalyzerResult::Empty => {}
         }
     }
@@ -74,28 +76,57 @@ impl Printer {
         }
     }
 
-    fn print_analyzer_result_definition_error(&self, buf: &mut String, error: String) {
+    fn chop_string(s: String, width: usize) -> Vec<String> {
         let mut i = 0usize;
         let mut lines = vec![];
 
-        lines.push(format!(
-            "{: <width$}",
-            "\x1B[1mANALYZER ERROR",
-            width = self.terminal_width()
-        ));
+        while i < s.len() {
+            let line_width = (s.len() - i).min(width);
 
-        while i < error.len() {
-            let line_width = (error.len() - i).min(self.terminal_width());
+            lines.push(format!("{: <width$}", &s[0..line_width], width = width));
 
-            lines.push(format!(
-                "{: <width$}",
-                &error[0..line_width],
-                width = self.terminal_width()
-            ));
-
-            i += self.terminal_width();
+            i += width;
         }
 
+        lines
+    }
+
+    fn print_analyzer_result_parse_error(&self, buf: &mut String, error: ParseError) {
+        let err_lines = Printer::chop_string(error.message, self.terminal_width());
+        let token_lines = Printer::chop_string(
+            format!("At token: {:?}", error.token),
+            self.terminal_width(),
+        );
+        let scope_lines =
+            Printer::chop_string(format!("Scope: {:?}", error.scope), self.terminal_width());
+        let title_lines = Printer::chop_string("PARSE ERROR".to_string(), self.terminal_width());
+
+        let lines = title_lines
+            .into_iter()
+            .chain(scope_lines.into_iter())
+            .chain(token_lines.into_iter())
+            .chain(err_lines.into_iter())
+            .collect();
+
+        self.print_error_message(buf, lines);
+    }
+
+    fn print_analyzer_result_definition_error(&self, buf: &mut String, error: String) {
+        let mut lines = Printer::chop_string(error, self.terminal_width());
+
+        lines.insert(
+            0,
+            format!(
+                "{: <width$}",
+                "ANALYZER ERROR",
+                width = self.terminal_width()
+            ),
+        );
+
+        self.print_error_message(buf, lines);
+    }
+
+    fn print_error_message(&self, buf: &mut String, lines: Vec<String>) {
         for i in 0..lines.len() {
             debug!("MOVE: {}", self.terminal_height() - i);
             TerminalHandler::append_cursor_location(
@@ -104,7 +135,11 @@ impl Printer {
                 self.terminal_height() - lines.len() + i,
             );
 
-            buf.push_str("\x1B[41m");
+            if i == 0 {
+                buf.push_str("\x1B[1m");
+            }
+
+            buf.push_str("\x1B[48;5;52m");
             buf.push_str(&lines[i]);
             buf.push_str("\x1B[0m");
         }

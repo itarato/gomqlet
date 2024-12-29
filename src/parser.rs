@@ -12,9 +12,9 @@ pub enum ParseErrorScope {
 
 #[derive(Debug)]
 pub struct ParseError {
-    token: Option<Token>,
-    scope: ParseErrorScope,
-    message: String,
+    pub token: Option<Token>,
+    pub scope: ParseErrorScope,
+    pub message: String,
 }
 
 pub struct Parser {
