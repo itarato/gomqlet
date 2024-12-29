@@ -54,6 +54,7 @@ impl Printer {
 
     fn print_analyzer_result_suggestions(&self, buf: &mut String, suggestions: Vec<String>) {
         let popup_width = self.terminal_dimension.0 / POPUP_BAR_WIDTH_DIVIDER;
+        let text_width = popup_width - 2;
 
         for i in 0..suggestions.len() {
             TerminalHandler::append_cursor_location(
@@ -61,7 +62,13 @@ impl Printer {
                 self.terminal_dimension.0 - popup_width,
                 i,
             );
-            buf.push_str(&suggestions[i]);
+            buf.push_str("\x1B[44m ");
+            buf.push_str(&format!(
+                "{: <width$}",
+                &suggestions[i][0..text_width.min(suggestions[i].len())],
+                width = text_width
+            ));
+            buf.push_str(" \x1B[0m");
         }
     }
 
