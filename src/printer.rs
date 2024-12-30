@@ -44,8 +44,8 @@ impl Printer {
 
     fn print_analyzer_result(&self, buf: &mut String, analyzer_result: AnalyzerResult) {
         match analyzer_result {
-            AnalyzerResult::Autocomplete(suggestions) => {
-                self.print_analyzer_result_suggestions(buf, suggestions)
+            AnalyzerResult::Suggestion(suggestions) => {
+                self.print_analyzer_result_suggestions(buf, suggestions.elems)
             }
             AnalyzerResult::DefinitionError(error) => {
                 self.print_analyzer_result_definition_error(buf, error)

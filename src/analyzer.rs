@@ -6,8 +6,14 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub struct Suggestion {
+    pub elems: Vec<String>,
+    pub token: Option<Token>,
+}
+
+#[derive(Debug)]
 pub enum AnalyzerResult {
-    Autocomplete(Vec<String>),
+    Suggestion(Suggestion),
     ParseError(ParseError),
     DefinitionError(String),
     Empty,
@@ -96,9 +102,10 @@ impl Analyzer {
             if pos >= field.name.pos && pos <= field.name.end_pos() {
                 // On the field name.
                 debug!("On field name: {}", field.name.original);
-                return Some(AnalyzerResult::Autocomplete(
-                    scope.field_names(field.name.original.clone()),
-                ));
+                return Some(AnalyzerResult::Suggestion(Suggestion {
+                    elems: scope.field_names(field.name.original.clone()),
+                    token: Some(field.name.clone()),
+                }));
             }
 
             if let Some(arglist) = &field.arglist {
@@ -137,9 +144,10 @@ impl Analyzer {
         }
 
         // In query but not on fields. -> AC can offer fields.
-        Some(AnalyzerResult::Autocomplete(
-            scope.field_names(String::new()),
-        ))
+        Some(AnalyzerResult::Suggestion(Suggestion {
+            elems: scope.field_names(String::new()),
+            token: None,
+        }))
     }
 
     fn find_pos_in_arglist(arglist: &ArgList, pos: usize, scope: &Field) -> Option<AnalyzerResult> {
@@ -158,9 +166,10 @@ impl Analyzer {
                 if pos >= arg.key.pos && pos <= arg.key.end_pos() {
                     // On arg key.
                     debug!("On key: {}", arg.key.original);
-                    return Some(AnalyzerResult::Autocomplete(
-                        scope.arg_names(&arg.key.original),
-                    ));
+                    return Some(AnalyzerResult::Suggestion(Suggestion {
+                        elems: scope.arg_names(&arg.key.original),
+                        token: Some(arg.key.clone()),
+                    }));
                 }
 
                 if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
@@ -180,9 +189,10 @@ impl Analyzer {
 
             // In arglist -> offer key.
             debug!("On arglist.");
-            return Some(AnalyzerResult::Autocomplete(
-                scope.arg_names(&String::new()),
-            ));
+            return Some(AnalyzerResult::Suggestion(Suggestion {
+                elems: scope.arg_names(&String::new()),
+                token: None,
+            }));
         }
 
         None
