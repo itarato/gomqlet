@@ -167,5 +167,39 @@ impl Text {
         n
     }
 
-    pub fn apply_suggestion(&mut self, suggestion: Suggestion) {}
+    pub fn apply_suggestion(&mut self, suggestion: Suggestion, idx: usize) {
+        if idx >= suggestion.elems.len() {
+            error!("Suggestion selection index out of bounds");
+            return;
+        }
+
+        match suggestion.token {
+            Some(token) => {
+                let token_start_cursor = self.cursor_of_absolute_position(token.pos);
+                self.lines[token_start_cursor.y].replace_range(
+                    token_start_cursor.x..token_start_cursor.x + token.len,
+                    &suggestion.elems[idx],
+                );
+                self.cursor.x = token_start_cursor.x + suggestion.elems[idx].len();
+            }
+            None => {
+                self.lines[self.cursor.y].insert_str(self.cursor.x, &suggestion.elems[idx]);
+                self.cursor.x += suggestion.elems[idx].len();
+            }
+        };
+    }
+
+    fn cursor_of_absolute_position(&self, pos: usize) -> CoordUsize {
+        let mut y = 0usize;
+        let mut i = 0;
+
+        while i + self.lines[y].len() <= pos {
+            i += self.lines[y].len() + 1 /* new line from tokenizer */;
+            y += 1;
+        }
+
+        debug!("pos={} i={} y={}", pos, i, y);
+
+        CoordUsize { x: pos - i, y }
+    }
 }

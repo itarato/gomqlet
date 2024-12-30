@@ -30,6 +30,12 @@ mod text;
 mod tokenizer;
 mod util;
 
+#[derive(PartialEq)]
+enum State {
+    Edit,
+    SuggestioSelect,
+}
+
 #[derive(Clone)]
 enum KeyboardInput {
     Key(u8),
@@ -52,6 +58,7 @@ struct Gomqlet {
     content: Rc<RefCell<Text>>,
     net_ops: NetOps,
     previous_suggestion: Option<Suggestion>,
+    state: State,
 }
 
 impl Gomqlet {
@@ -66,6 +73,7 @@ impl Gomqlet {
             content,
             net_ops: NetOps::new(),
             previous_suggestion: None,
+            state: State::Edit,
         })
     }
 
@@ -93,8 +101,22 @@ impl Gomqlet {
                         self.net_ops
                             .execute_graphql_operation(self.content.borrow().to_string());
                     }
+                    KeyboardInput::Key(15) => {
+                        // CTRL-O
+                        self.state = State::SuggestioSelect;
+                    }
                     KeyboardInput::Key(code) => {
-                        self.editor.parse_input(EditorInput::Char(code));
+                        if self.state == State::SuggestioSelect {
+                            if code >= b'0' && code <= b'9' {
+                                self.content.borrow_mut().apply_suggestion(
+                                    self.previous_suggestion.clone().unwrap(),
+                                    (code - b'0') as usize,
+                                );
+                            }
+                            self.state = State::Edit;
+                        } else {
+                            self.editor.parse_input(EditorInput::Char(code));
+                        }
                     }
                     KeyboardInput::Left => {
                         self.editor.parse_input(EditorInput::Left);
@@ -176,6 +198,8 @@ fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
     ]);
     let mut i = 0usize;
     let mut out = vec![];
+
+    debug!("{:?}", &buf[0..len]);
 
     while i < len {
         if buf[i] == 27 {
