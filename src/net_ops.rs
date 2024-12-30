@@ -17,13 +17,10 @@ impl NetOps {
     pub fn execute_graphql_operation(&self, body: String) {
         let mut r = self
             .client
-            .post("https://itarato.myshopify.com/api/2024-10/graphql.json")
+            .post("https://<ADD-DOMAIN>/api/2024-10/graphql.json")
             .header(CONTENT_TYPE, "application/json")
             .header(ACCEPT, "application/json")
-            .header(
-                "X-Shopify-Storefront-Access-Token",
-                "7f4754b975e4b1f4e04b282a37894a9a",
-            )
+            .header("X-Shopify-Storefront-Access-Token", "<ADD-KEY>")
             .body(format!("{{ \"query\": \"{}\" }}", body))
             .send()
             .unwrap();

@@ -128,7 +128,6 @@ impl Printer {
 
     fn print_error_message(&self, buf: &mut String, lines: Vec<String>) {
         for i in 0..lines.len() {
-            debug!("MOVE: {}", self.terminal_height() - i);
             TerminalHandler::append_cursor_location(
                 buf,
                 0,

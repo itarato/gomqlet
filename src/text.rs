@@ -1,4 +1,4 @@
-use crate::util::CoordUsize;
+use crate::{analyzer::Suggestion, util::CoordUsize};
 
 const TAB_SIZE: usize = 2;
 
@@ -166,4 +166,6 @@ impl Text {
 
         n
     }
+
+    pub fn apply_suggestion(&mut self, suggestion: Suggestion) {}
 }

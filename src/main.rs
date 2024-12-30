@@ -5,7 +5,7 @@ use std::{
     rc::Rc,
 };
 
-use analyzer::Analyzer;
+use analyzer::{Analyzer, Suggestion};
 use editor::{Editor, EditorInput};
 use net_ops::NetOps;
 use printer::Printer;
@@ -51,6 +51,7 @@ struct Gomqlet {
     analyzer: Analyzer,
     content: Rc<RefCell<Text>>,
     net_ops: NetOps,
+    previous_suggestion: Option<Suggestion>,
 }
 
 impl Gomqlet {
@@ -64,6 +65,7 @@ impl Gomqlet {
             analyzer: Analyzer::new(),
             content,
             net_ops: NetOps::new(),
+            previous_suggestion: None,
         })
     }
 
@@ -132,6 +134,7 @@ impl Gomqlet {
                     tokens_without_whitecpace,
                     self.content.borrow().new_line_adjusted_cursor_position(),
                 );
+                self.previous_suggestion = analyzer_result.as_suggestion().cloned();
                 self.printer.print(
                     tokens,
                     self.content.borrow().cursor.clone(),
@@ -173,8 +176,6 @@ fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
     ]);
     let mut i = 0usize;
     let mut out = vec![];
-
-    // debug!("{:?}", buf);
 
     while i < len {
         if buf[i] == 27 {

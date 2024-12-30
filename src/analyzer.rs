@@ -5,7 +5,7 @@ use crate::{
     tokenizer::Token,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Suggestion {
     pub elems: Vec<String>,
     pub token: Option<Token>,
@@ -17,6 +17,15 @@ pub enum AnalyzerResult {
     ParseError(ParseError),
     DefinitionError(String),
     Empty,
+}
+
+impl AnalyzerResult {
+    pub fn as_suggestion(&self) -> Option<&Suggestion> {
+        match self {
+            AnalyzerResult::Suggestion(suggestion) => Some(suggestion),
+            _ => None,
+        }
+    }
 }
 
 pub struct Analyzer {
