@@ -2,10 +2,19 @@
 
 Toy graphql autocomplete project.
 
+Features:
+
+- GraphQL query / mutation editor
+- syntax highlight
+- tokenizer + parser
+- autocompletion
+- error detection
+- query / mutation exection (over HTTP)
+
 ### Todo
 
 Bug:
-- when typing a bad char (eg - outside of "") it will register a space/cursor offset but not showing it
+- 
 
 Editor:
 - enter on an opening paren/brace/bracket should be +1 indent
@@ -20,11 +29,9 @@ Parsing:
 -
 
 Analysis:
-- autocomplete to a vertical list
 - autocomplete with fuzzy search
 - only offer not yet added fields
 - arglist value completion
-- apply recommendation (trigger: shortcut?)
 - validation:
     - arg requirement
     - fieldset
@@ -32,5 +39,4 @@ Analysis:
 
 GraphQL:
 - schema config (config file or command line param)
-- query/mutation over HTTP
 - magic tokens (eg.: random string)

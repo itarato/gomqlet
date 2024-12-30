@@ -125,7 +125,12 @@ impl Tokenizer {
                     tokens.push(Tokenizer::consume_string(&chars, &mut pos));
                 }
                 _ => {
-                    error!("Tokenizer error: unexpected char: {}", chars[pos]);
+                    tokens.push(Token::new(
+                        TokenKind::Invalid("Invalid character".into()),
+                        pos,
+                        1,
+                        chars[pos].to_string(),
+                    ));
                     pos += 1;
                 }
             }

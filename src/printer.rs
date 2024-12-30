@@ -149,6 +149,13 @@ impl Printer {
             .into_iter()
             .map(|token| match token.kind {
                 TokenKind::LineBreak => "\r\n".into(),
+                TokenKind::Invalid(_) => {
+                    format!(
+                        "\x1B[{}m\x1B[4m{}\x1B[0m",
+                        token.kind.vt100_color_code(),
+                        token.original
+                    )
+                }
                 _ => format!(
                     "\x1B[{}m{}\x1B[0m",
                     token.kind.vt100_color_code(),
