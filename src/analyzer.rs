@@ -198,6 +198,7 @@ impl Analyzer {
                         // In cart field (scope)
                         // On arglist arg key: `input`
                         // -> read type => INPUT_OBJECT (object) of CartInput
+
                         // -> lookup CartInput
                         // -> get `inputFields`: attributes/lines/discountCodes/...
 

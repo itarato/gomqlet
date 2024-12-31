@@ -50,6 +50,10 @@ impl ArgList {
             })
             .collect()
     }
+
+    pub fn arg(&self, name: &String) -> Option<&Arg> {
+        // STOPPED HERE
+    }
 }
 
 pub struct Field {
