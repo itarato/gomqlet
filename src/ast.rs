@@ -1,3 +1,5 @@
+use std::ops::{Range, RangeInclusive};
+
 use crate::tokenizer::Token;
 
 pub enum Root {
@@ -11,16 +13,46 @@ pub struct Query {
     pub field_list: FieldList,
 }
 
+impl Query {
+    pub fn range_exclusive(&self) -> Range<usize> {
+        self.start_pos..self.end_pos
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.start_pos..=self.end_pos
+    }
+}
+
 pub struct Mutation {
     pub start_pos: usize,
     pub end_pos: usize,
     pub field_list: FieldList,
 }
 
+impl Mutation {
+    pub fn range_exclusive(&self) -> Range<usize> {
+        self.start_pos..self.end_pos
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.start_pos..=self.end_pos
+    }
+}
+
 pub struct FieldList {
     pub start_pos: usize,
     pub end_pos: usize,
     pub fields: Vec<Field>,
+}
+
+impl FieldList {
+    pub fn range_exclusive(&self) -> Range<usize> {
+        self.start_pos..self.end_pos
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.start_pos..=self.end_pos
+    }
 }
 
 pub struct Field {
@@ -31,11 +63,31 @@ pub struct Field {
     pub field_list: Option<FieldList>,
 }
 
+impl Field {
+    pub fn range_exclusive(&self) -> Range<usize> {
+        self.start_pos..self.end_pos
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.start_pos..=self.end_pos
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct ArgList {
     pub start_pos: usize,
     pub end_pos: usize,
     pub params: Vec<ParamKeyValuePair>,
+}
+
+impl ArgList {
+    pub fn range_exclusive(&self) -> Range<usize> {
+        self.start_pos..self.end_pos
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.start_pos..=self.end_pos
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -44,6 +96,16 @@ pub struct ParamKeyValuePair {
     pub end_pos: usize,
     pub key: Token,
     pub value: ParamValue,
+}
+
+impl ParamKeyValuePair {
+    pub fn range_exclusive(&self) -> Range<usize> {
+        self.start_pos..self.end_pos
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.start_pos..=self.end_pos
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -98,6 +160,14 @@ impl ParamValue {
             _ => panic!("Param value expected to be a simple type"),
         }
     }
+
+    pub fn range_exclusive(&self) -> Range<usize> {
+        self.start_pos()..self.end_pos()
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.start_pos()..=self.end_pos()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -105,4 +175,14 @@ pub struct ListParamValue {
     pub start_pos: usize,
     pub end_pos: usize,
     pub elems: Vec<ParamValue>,
+}
+
+impl ListParamValue {
+    pub fn range_exclusive(&self) -> Range<usize> {
+        self.start_pos..self.end_pos
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.start_pos..=self.end_pos
+    }
 }

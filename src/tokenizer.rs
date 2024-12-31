@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
@@ -19,6 +21,10 @@ impl Token {
     // The position after the token (aka non inclusive).
     pub fn end_pos(&self) -> usize {
         self.pos + self.len
+    }
+
+    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
+        self.pos..=self.pos + self.len
     }
 }
 

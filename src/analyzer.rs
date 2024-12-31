@@ -42,16 +42,24 @@ impl Analyzer {
             .type_definition(self.schema.query_root_name.clone())
             .ok_or("Query is not found in the schema".to_string())?;
 
+        if !query.field_list.range_exclusive().contains(&pos) {
+            return Ok(None);
+        }
+
         self.find_pos_in_field_list(&query.field_list, pos, query_scope)
     }
 
-    fn find_pos_in_mutation(&self, query: &ast::Mutation, pos: usize) -> AnalyzerResult {
+    fn find_pos_in_mutation(&self, mutation: &ast::Mutation, pos: usize) -> AnalyzerResult {
         let mutation_scope = self
             .schema
             .type_definition(self.schema.mutation_root_name.clone())
             .ok_or("Mutation is not found in the schema".to_string())?;
 
-        self.find_pos_in_field_list(&query.field_list, pos, mutation_scope)
+        if !mutation.field_list.range_exclusive().contains(&pos) {
+            return Ok(None);
+        }
+
+        self.find_pos_in_field_list(&mutation.field_list, pos, mutation_scope)
     }
 
     fn find_pos_in_field_list(
@@ -60,22 +68,21 @@ impl Analyzer {
         pos: usize,
         scope: &schema::Type,
     ) -> AnalyzerResult {
-        if pos < field_list.start_pos || pos >= field_list.end_pos {
-            // Outside of the whole query.
-            return Ok(None);
-        }
+        assert!(field_list.range_exclusive().contains(&pos));
 
         for field in &field_list.fields {
+            // Not there yet.
             if pos > field.end_pos {
                 continue;
             }
 
+            // Too late.
             if pos < field.start_pos {
                 break;
             }
 
             // On field.
-            if pos >= field.name.pos && pos <= field.name.end_pos() {
+            if field.name.range_inclusive().contains(&pos) {
                 // On the field name.
                 return Ok(Some(Suggestion {
                     elems: scope.field_names(field.name.original.clone()),
@@ -84,7 +91,7 @@ impl Analyzer {
             }
 
             if let Some(arglist) = &field.arglist {
-                if pos >= arglist.start_pos && pos <= arglist.end_pos {
+                if arglist.range_exclusive().contains(&pos) {
                     return scope
                         .field(field.name.original.clone())
                         .ok_or(format!("Invalid field {}", field.name.original))
@@ -95,14 +102,17 @@ impl Analyzer {
             }
 
             if let Some(field_list) = &field.field_list {
-                return self
-                    .schema
-                    .field_type(scope, field.name.original.clone())
-                    .and_then(|subfield_type_definition| {
-                        self.find_pos_in_field_list(field_list, pos, subfield_type_definition)
-                    });
+                if field_list.range_exclusive().contains(&pos) {
+                    return self
+                        .schema
+                        .field_type(scope, field.name.original.clone())
+                        .and_then(|subfield_type_definition| {
+                            self.find_pos_in_field_list(field_list, pos, subfield_type_definition)
+                        });
+                }
             }
 
+            // Between the gaps (not on key [or key's fieldset]) but on the key+fieldset frame.
             return Ok(None);
         }
 
@@ -119,9 +129,7 @@ impl Analyzer {
         pos: usize,
         scope: &schema::ArgList,
     ) -> AnalyzerResult {
-        if pos < arglist.start_pos || pos > arglist.end_pos {
-            return Ok(None);
-        }
+        assert!(arglist.range_exclusive().contains(&pos));
 
         // Inside arglist.
         for arg in &arglist.params {
@@ -148,7 +156,7 @@ impl Analyzer {
                     crate::ast::ParamValue::Simple(token) => {
                         // TODO!!!
                     }
-                    crate::ast::ParamValue::Object(object) => {
+                    crate::ast::ParamValue::Object(object_arglist) => {
                         // We are in the <arg-name>: {    } scope. So we expect an object type (aka INPUT_OBJECT).
                         //                           ^^^^^^
                         // Get the current arg definition.
@@ -182,7 +190,11 @@ impl Analyzer {
                             }
                         };
 
-                        return self.find_pos_in_arglist(object, pos, value_args);
+                        return if object_arglist.range_exclusive().contains(&pos) {
+                            self.find_pos_in_arglist(object_arglist, pos, value_args)
+                        } else {
+                            Ok(None)
+                        };
                     }
                     crate::ast::ParamValue::List(list) => {
                         // TODO!!!
