@@ -27,11 +27,70 @@ impl TypeClass {
             TypeClass::List(inner) => inner.underlying_type_name(),
         }
     }
+
+    fn from_json_value(node: &Value) -> TypeClass {
+        let kind = node.as_object().unwrap()["kind"].as_str().unwrap();
+        match kind {
+            "NON_NULL" => TypeClass::NonNull(Box::new(TypeClass::from_json_value(
+                &node.as_object().unwrap()["ofType"],
+            ))),
+            "LIST" => TypeClass::List(Box::new(TypeClass::from_json_value(
+                &node.as_object().unwrap()["ofType"],
+            ))),
+            "OBJECT" => TypeClass::Object(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "INTERFACE" => TypeClass::Interface(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "SCALAR" => TypeClass::Scalar(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "INPUT_OBJECT" => TypeClass::Input(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "ENUM" => TypeClass::Enum(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            "UNION" => TypeClass::Union(
+                node.as_object().unwrap()["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            _ => unimplemented!("Unmapped field type: {}", kind),
+        }
+    }
 }
 
 pub struct Arg {
     pub name: String,
     pub arg_type: TypeClass,
+}
+
+impl Arg {
+    fn from_json_value(node: &Value) -> Arg {
+        let object = node.as_object().unwrap();
+        let name = object["name"].as_str().unwrap().to_string();
+        let arg_type = TypeClass::from_json_value(&object["type"]);
+
+        Arg { name, arg_type }
+    }
 }
 
 pub struct ArgList {
@@ -78,59 +137,10 @@ impl Field {
 
         Field {
             name,
-            field_type: Field::resolve_type(&node.as_object().unwrap()["type"]),
+            field_type: TypeClass::from_json_value(&node.as_object().unwrap()["type"]),
             args: ArgList {
                 elems: Field::resolve_args(node.as_object().unwrap()["args"].as_array().unwrap()),
             },
-        }
-    }
-
-    fn resolve_type(node: &Value) -> TypeClass {
-        let kind = node.as_object().unwrap()["kind"].as_str().unwrap();
-        match kind {
-            "NON_NULL" => TypeClass::NonNull(Box::new(Field::resolve_type(
-                &node.as_object().unwrap()["ofType"],
-            ))),
-            "LIST" => TypeClass::List(Box::new(Field::resolve_type(
-                &node.as_object().unwrap()["ofType"],
-            ))),
-            "OBJECT" => TypeClass::Object(
-                node.as_object().unwrap()["name"]
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            ),
-            "INTERFACE" => TypeClass::Interface(
-                node.as_object().unwrap()["name"]
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            ),
-            "SCALAR" => TypeClass::Scalar(
-                node.as_object().unwrap()["name"]
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            ),
-            "INPUT_OBJECT" => TypeClass::Input(
-                node.as_object().unwrap()["name"]
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            ),
-            "ENUM" => TypeClass::Enum(
-                node.as_object().unwrap()["name"]
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            ),
-            "UNION" => TypeClass::Union(
-                node.as_object().unwrap()["name"]
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            ),
-            _ => unimplemented!("Unmapped field type: {}", kind),
         }
     }
 
@@ -142,7 +152,7 @@ impl Field {
                     .as_str()
                     .unwrap()
                     .to_string(),
-                arg_type: Field::resolve_type(&raw_arg.as_object().unwrap()["type"]),
+                arg_type: TypeClass::from_json_value(&raw_arg.as_object().unwrap()["type"]),
             })
             .collect()
     }
@@ -164,6 +174,37 @@ pub enum Type {
 }
 
 impl Type {
+    pub fn from_json_value(node: &Value) -> Option<Type> {
+        let object = node.as_object().unwrap();
+        let name = object["name"].as_str().unwrap().to_string();
+        let kind = object["kind"].as_str().unwrap();
+
+        match kind {
+            "OBJECT" => {
+                let fields = object["fields"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|field_def| Field::from_json_value(field_def))
+                    .collect();
+
+                Some(Type::Object(ObjectType { name, fields }))
+            }
+            "INPUT_OBJECT" => {
+                let args_elems = object["inputFields"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|arg_def| Arg::from_json_value(arg_def))
+                    .collect();
+                let args = ArgList { elems: args_elems };
+
+                Some(Type::InputObject(InputObjectType { name, args }))
+            }
+            _ => None,
+        }
+    }
+
     pub fn field_names(&self, prefix: String) -> Vec<String> {
         match self {
             Type::Object(object_type) => object_type
@@ -264,35 +305,7 @@ impl Schema {
             .as_array()
             .unwrap()
             .iter()
-            .filter_map(|type_def| {
-                let object_type_def = type_def.as_object().unwrap();
-
-                let name = object_type_def["name"].as_str().unwrap().to_string();
-                match object_type_def["kind"].as_str().unwrap() {
-                    "OBJECT" => {
-                        let fields = object_type_def["fields"]
-                            .as_array()
-                            .unwrap()
-                            .iter()
-                            .map(|field_def| Field::from_json_value(field_def))
-                            .collect();
-
-                        Some(Type::Object(ObjectType { name, fields }))
-                    }
-                    "INPUT_OBJECT" => {
-                        let args = object_type_def["inputFields"]
-                            .as_array()
-                            .unwrap()
-                            .iter()
-                            .map(|field_def| Field::from_json_value(field_def))
-                            .collect();
-
-                        Some(Type::InputObject(InputObjectType { name, args }))
-                    }
-                    // TODO: handle other types!
-                    _ => None,
-                }
-            })
+            .filter_map(|type_def| Type::from_json_value(type_def))
             .collect()
     }
 
