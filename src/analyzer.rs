@@ -166,11 +166,10 @@ impl Analyzer {
                         };
 
                         // -> lookup CartInput
-                        let value_type = match self.schema.type_definition(value_type_name.clone())
-                        {
-                            Some(ty) => ty,
-                            None => return Err(format!("Type {} not found.", &value_type_name)),
-                        };
+                        let value_type = self
+                            .schema
+                            .type_definition(value_type_name.clone())
+                            .ok_or(format!("Type {} not found.", &value_type_name))?;
 
                         // -> get `inputFields`: attributes/lines/discountCodes/...
                         let value_args = match value_type {
