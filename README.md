@@ -11,30 +11,38 @@ Features:
 - error detection
 - query / mutation exection (over HTTP)
 
-### Todo
+## Todo
 
 Bug:
+
 - if cursor is between arglist key and value the suggestion is affering the parent arglist keywords instead of being empty
+- some suggestion shows after closing braces
 
 Editor:
+
 - enter on an opening paren/brace/bracket should be +1 indent
 - adding an opening parent/brace/bracket should add the closing one too
 - save to file
 
 Tokenizier:
+
 -
 
 Parsing:
+
 -
 
 Analysis:
+
 - autocomplete with fuzzy search
 - only offer not yet added fields
 - arglist value completion
+- show numbers on suggestions after CTRL-O
 - validation:
     - arg requirement
     - fieldset
     - fieldset emptiness
 
 GraphQL:
+
 - magic tokens (eg.: random string)
