@@ -41,6 +41,7 @@ Analysis:
     - arg requirement
     - fieldset
     - fieldset emptiness
+- add type indicator to suggestion list (obj, list, enum, etc)
 
 GraphQL:
 
