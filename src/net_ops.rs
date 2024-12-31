@@ -1,7 +1,5 @@
-use std::io::Read;
-
-use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use serde_json::Value;
+use std::io::Read;
 
 use crate::config::Config;
 

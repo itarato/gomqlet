@@ -1,4 +1,4 @@
-use crate::{schema::ObjectType, tokenizer::Token};
+use crate::tokenizer::Token;
 
 pub enum Root {
     Query(Query),
@@ -75,6 +75,7 @@ impl ParamValue {
         }
     }
 
+    #[allow(unused)]
     pub fn as_list(&self) -> &ListParamValue {
         match &self {
             ParamValue::List(list) => list,
@@ -82,6 +83,7 @@ impl ParamValue {
         }
     }
 
+    #[allow(unused)]
     pub fn as_object(&self) -> &ArgList {
         match &self {
             ParamValue::Object(object) => object,
@@ -89,6 +91,7 @@ impl ParamValue {
         }
     }
 
+    #[allow(unused)]
     pub fn as_simple(&self) -> &Token {
         match &self {
             ParamValue::Simple(token) => token,

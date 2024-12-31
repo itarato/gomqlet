@@ -2,7 +2,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     fs::File,
-    io::{self, Read, Write},
+    io::{self, Read},
     rc::Rc,
 };
 

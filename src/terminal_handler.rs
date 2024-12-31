@@ -1,5 +1,5 @@
 use std::{
-    io::{self, Write},
+    io::{self},
     os::fd::AsRawFd,
 };
 
@@ -48,14 +48,6 @@ impl TerminalHandler {
         tcflush(fd, TCIOFLUSH)?;
 
         Ok(())
-    }
-
-    pub fn clear_screen() -> io::Result<()> {
-        io::stdout().write_all(b"\x1b[2J")
-    }
-
-    pub fn set_cursor_location(row: usize, col: usize) {
-        print!("\x1b[{};{}H", row + 1, col + 1);
     }
 
     pub fn append_cursor_location(out: &mut String, row: usize, col: usize) {
