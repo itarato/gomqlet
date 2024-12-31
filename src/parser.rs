@@ -90,15 +90,15 @@ impl Parser {
 
         let mut end_pos = name_token.end_pos();
 
-        let arglist = if self.is_next_token_kind(TokenKind::OpenParen) {
-            let arglist = self.parse_arglist(TokenKind::OpenParen, TokenKind::CloseParen)?;
+        let arglist = if self.is_next_token_kind(&TokenKind::OpenParen) {
+            let arglist = self.parse_arglist(&TokenKind::OpenParen, &TokenKind::CloseParen)?;
             end_pos = arglist.end_pos;
             Some(arglist)
         } else {
             None
         };
 
-        let field_list = if self.is_next_token_kind(TokenKind::OpenBrace) {
+        let field_list = if self.is_next_token_kind(&TokenKind::OpenBrace) {
             let field_list = self.parse_fields_subobject()?;
             end_pos = field_list.end_pos;
             Some(field_list)
@@ -117,8 +117,8 @@ impl Parser {
 
     fn parse_arglist(
         &mut self,
-        open_token_kind: TokenKind,
-        close_token_kind: TokenKind,
+        open_token_kind: &TokenKind,
+        close_token_kind: &TokenKind,
     ) -> Result<ast::ArgList, ParseError> {
         if !self.is_next_token_kind(open_token_kind) {
             return Err(self.parse_error(ParseErrorScope::ArgList, "Missing open paren"));
@@ -128,7 +128,7 @@ impl Parser {
 
         let mut params = vec![];
         loop {
-            if self.is_next_token_kind(close_token_kind.clone()) {
+            if self.is_next_token_kind(close_token_kind) {
                 break;
             }
 
@@ -143,11 +143,11 @@ impl Parser {
             };
             self.ptr += 1;
 
-            if self.is_next_token_kind(TokenKind::Colon) {
+            if self.is_next_token_kind(&TokenKind::Colon) {
                 self.ptr += 1;
             } // Else is omitted due to error handling (assume it's missing for now).
 
-            let value = self.parse_arglist_value()?;
+            let value = self.parse_arglist_value(close_token_kind)?;
 
             params.push(ast::ParamKeyValuePair {
                 start_pos: key.pos,
@@ -156,7 +156,7 @@ impl Parser {
                 value,
             });
 
-            if self.is_next_token_kind(TokenKind::Comma) {
+            if self.is_next_token_kind(&TokenKind::Comma) {
                 self.ptr += 1;
                 continue;
             } else {
@@ -177,7 +177,10 @@ impl Parser {
         })
     }
 
-    fn parse_arglist_value(&mut self) -> Result<ast::ParamValue, ParseError> {
+    fn parse_arglist_value(
+        &mut self,
+        close_token_kind: &TokenKind,
+    ) -> Result<ast::ParamValue, ParseError> {
         let token = self.peek_token_cloned();
         match token {
             Some(Token {
@@ -198,33 +201,38 @@ impl Parser {
             Some(Token {
                 kind: TokenKind::OpenBracket,
                 ..
-            }) => Ok(ast::ParamValue::List(self.parse_arglist_value_list_type()?)),
+            }) => Ok(ast::ParamValue::List(
+                self.parse_arglist_value_list_type(close_token_kind)?,
+            )),
             Some(Token {
                 kind: TokenKind::OpenBrace,
                 ..
             }) => Ok(ast::ParamValue::Object(
-                self.parse_arglist(TokenKind::OpenBrace, TokenKind::CloseBrace)?,
+                self.parse_arglist(&TokenKind::OpenBrace, &TokenKind::CloseBrace)?,
             )),
             // Error handling:
-            Some(Token {
-                kind: TokenKind::CloseParen,
-                pos,
-                ..
-            })
-            | Some(Token {
-                kind: TokenKind::Comma,
-                pos,
-                ..
-            }) => Ok(ast::ParamValue::Missing(pos)),
-            _ => Err(self.parse_error(
+            Some(Token { ref kind, pos, .. }) => {
+                if kind == close_token_kind || kind == &TokenKind::Comma {
+                    Ok(ast::ParamValue::Missing(pos))
+                } else {
+                    Err(self.parse_error(
+                        ParseErrorScope::ArgListValue,
+                        "Unexpected arglist value type",
+                    ))
+                }
+            }
+            None => Err(self.parse_error(
                 ParseErrorScope::ArgListValue,
-                "Unexpected arglist value type",
+                "Unexpected lack of arglist value",
             )),
         }
     }
 
-    fn parse_arglist_value_list_type(&mut self) -> Result<ast::ListParamValue, ParseError> {
-        if !self.is_next_token_kind(TokenKind::OpenBracket) {
+    fn parse_arglist_value_list_type(
+        &mut self,
+        close_token_kind: &TokenKind,
+    ) -> Result<ast::ListParamValue, ParseError> {
+        if !self.is_next_token_kind(&TokenKind::OpenBracket) {
             return Err(self.parse_error(
                 ParseErrorScope::ArgListValueListType,
                 "Expected list opening backet for list param value",
@@ -235,19 +243,19 @@ impl Parser {
 
         let mut elems = vec![];
         loop {
-            if self.is_next_token_kind(TokenKind::CloseBracket) {
+            if self.is_next_token_kind(&TokenKind::CloseBracket) {
                 break;
             }
 
-            elems.push(self.parse_arglist_value()?);
+            elems.push(self.parse_arglist_value(close_token_kind)?);
 
-            if !self.is_next_token_kind(TokenKind::Comma) {
+            if !self.is_next_token_kind(&TokenKind::Comma) {
                 break;
             }
             self.ptr += 1;
         }
 
-        if !self.is_next_token_kind(TokenKind::CloseBracket) {
+        if !self.is_next_token_kind(&TokenKind::CloseBracket) {
             return Err(self.parse_error(
                 ParseErrorScope::ArgListValueListType,
                 "Expected list closing backet for list param value",
@@ -264,7 +272,7 @@ impl Parser {
     }
 
     fn parse_fields_subobject(&mut self) -> Result<FieldList, ParseError> {
-        let start_pos = if self.is_next_token_kind(TokenKind::OpenBrace) {
+        let start_pos = if self.is_next_token_kind(&TokenKind::OpenBrace) {
             let start_pos = self.peek_token().unwrap().pos;
             self.ptr += 1;
             start_pos
@@ -278,7 +286,7 @@ impl Parser {
                 return Err(self.parse_error(ParseErrorScope::Query, "Missing closing brace"));
             }
 
-            if self.is_next_token_kind(TokenKind::CloseBrace) {
+            if self.is_next_token_kind(&TokenKind::CloseBrace) {
                 let end_pos = self.peek_token().unwrap().end_pos();
                 self.ptr += 1;
                 return Ok(ast::FieldList {
@@ -300,9 +308,9 @@ impl Parser {
         }
     }
 
-    fn is_next_token_kind(&self, expected: TokenKind) -> bool {
+    fn is_next_token_kind(&self, expected: &TokenKind) -> bool {
         if let Some(Token { kind, .. }) = self.peek_token() {
-            kind == &expected
+            kind == expected
         } else {
             false
         }
