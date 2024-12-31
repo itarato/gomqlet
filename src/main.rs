@@ -1,6 +1,7 @@
 use std::{
     cell::RefCell,
     collections::HashMap,
+    fs::File,
     io::{self, Read, Write},
     rc::Rc,
 };
@@ -40,7 +41,29 @@ struct CommandLineParams {
     config_file: String,
 
     #[arg(short, long, value_name = "SOURCE_FILE")]
-    source_file: String,
+    source_file: Option<String>,
+}
+
+impl CommandLineParams {
+    fn config(&self) -> Config {
+        let file = File::open(&self.config_file).expect("Cannot load config file");
+        serde_json::from_reader(file).unwrap()
+    }
+
+    fn source(&self) -> Option<String> {
+        match &self.source_file {
+            Some(source) => {
+                let mut file = File::open(source).expect("Cannot load source file");
+                let mut content = String::new();
+
+                file.read_to_string(&mut content)
+                    .expect("Failed reading content of source");
+
+                Some(content)
+            }
+            None => None,
+        }
+    }
 }
 
 #[derive(PartialEq)]
@@ -77,14 +100,17 @@ struct Gomqlet {
 impl Gomqlet {
     fn new(command_line_params: CommandLineParams) -> io::Result<Gomqlet> {
         let terminal_handler = TerminalHandler::new();
-        let content = Rc::new(RefCell::new(Text::new()));
+        let content = Rc::new(RefCell::new(Text::new(command_line_params.source())));
+
+        let config = command_line_params.config();
+
         Ok(Gomqlet {
             terminal_handler,
             editor: Editor::new(content.clone()),
             printer: Printer::new(),
             analyzer: Analyzer::new(),
             content,
-            net_ops: NetOps::new(&command_line_params),
+            net_ops: NetOps::new(&config),
             previous_suggestion: None,
             state: State::Edit,
         })
@@ -92,12 +118,9 @@ impl Gomqlet {
 
     fn exec_loop(&mut self) -> io::Result<()> {
         let mut stdin = io::stdin();
-        let mut stdout = io::stdout();
         let mut buf: [u8; 8] = [0; 8];
 
-        TerminalHandler::clear_screen()?;
-        TerminalHandler::set_cursor_location(0, 0);
-        stdout.flush()?;
+        self.refresh_screen();
 
         loop {
             let read_len = stdin.read(&mut buf)?;
@@ -154,29 +177,33 @@ impl Gomqlet {
                     }
                 };
 
-                let tokens = self.build_tokens();
-                let tokens_without_whitecpace = tokens
-                    .clone()
-                    .into_iter()
-                    .filter(|token| match token.kind {
-                        TokenKind::Whitespace(_) => false,
-                        TokenKind::LineBreak => false,
-                        _ => true,
-                    })
-                    .collect::<Vec<_>>();
-
-                let analyzer_result = self.analyzer.analyze(
-                    tokens_without_whitecpace,
-                    self.content.borrow().new_line_adjusted_cursor_position(),
-                );
-                self.previous_suggestion = analyzer_result.as_suggestion().cloned();
-                self.printer.print(
-                    tokens,
-                    self.content.borrow().cursor.clone(),
-                    analyzer_result,
-                );
+                self.refresh_screen();
             }
         }
+    }
+
+    fn refresh_screen(&mut self) {
+        let tokens = self.build_tokens();
+        let tokens_without_whitecpace = tokens
+            .clone()
+            .into_iter()
+            .filter(|token| match token.kind {
+                TokenKind::Whitespace(_) => false,
+                TokenKind::LineBreak => false,
+                _ => true,
+            })
+            .collect::<Vec<_>>();
+
+        let analyzer_result = self.analyzer.analyze(
+            tokens_without_whitecpace,
+            self.content.borrow().new_line_adjusted_cursor_position(),
+        );
+        self.previous_suggestion = analyzer_result.as_suggestion().cloned();
+        self.printer.print(
+            tokens,
+            self.content.borrow().cursor.clone(),
+            analyzer_result,
+        );
     }
 
     // TODO: Position is not accurate in a global context. Make the printer able to work with a single list (not nested).

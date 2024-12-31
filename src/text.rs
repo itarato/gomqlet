@@ -8,9 +8,14 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn new() -> Text {
+    pub fn new(source: Option<String>) -> Text {
+        let lines = match source {
+            Some(s) => s.lines().map(|slice| slice.to_string()).collect(),
+            None => vec![String::new()],
+        };
+
         Text {
-            lines: vec![String::new()],
+            lines,
             cursor: CoordUsize { x: 0, y: 0 },
         }
     }

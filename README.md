@@ -14,12 +14,11 @@ Features:
 ### Todo
 
 Bug:
-- 
+- if cursor is between arglist key and value the suggestion is affering the parent arglist keywords instead of being empty
 
 Editor:
 - enter on an opening paren/brace/bracket should be +1 indent
 - adding an opening parent/brace/bracket should add the closing one too
-- load from file
 - save to file
 
 Tokenizier:
@@ -38,5 +37,4 @@ Analysis:
     - fieldset emptiness
 
 GraphQL:
-- schema config (config file or command line param)
 - magic tokens (eg.: random string)
