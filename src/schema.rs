@@ -2,6 +2,7 @@ use std::fs::File;
 
 use serde_json::Value;
 
+#[derive(Debug)]
 pub enum TypeClass {
     NonNull(Box<TypeClass>),
     List(Box<TypeClass>),
@@ -29,8 +30,8 @@ impl TypeClass {
 }
 
 pub struct Arg {
-    name: String,
-    arg_type: TypeClass,
+    pub name: String,
+    pub arg_type: TypeClass,
 }
 
 pub struct ArgList {
@@ -52,7 +53,13 @@ impl ArgList {
     }
 
     pub fn arg(&self, name: &String) -> Option<&Arg> {
-        // STOPPED HERE
+        for arg in &self.elems {
+            if &arg.name == name {
+                return Some(arg);
+            }
+        }
+
+        None
     }
 }
 
@@ -147,8 +154,8 @@ pub struct ObjectType {
 }
 
 pub struct InputObjectType {
-    name: String,
-    args: ArgList,
+    pub name: String,
+    pub args: ArgList,
 }
 
 pub enum Type {
@@ -271,6 +278,16 @@ impl Schema {
                             .collect();
 
                         Some(Type::Object(ObjectType { name, fields }))
+                    }
+                    "INPUT_OBJECT" => {
+                        let args = object_type_def["inputFields"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|field_def| Field::from_json_value(field_def))
+                            .collect();
+
+                        Some(Type::InputObject(InputObjectType { name, args }))
                     }
                     // TODO: handle other types!
                     _ => None,

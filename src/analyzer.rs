@@ -1,7 +1,7 @@
 use crate::{
     ast,
     parser::{ParseError, Parser},
-    schema,
+    schema::{self, Type},
     tokenizer::Token,
 };
 
@@ -121,8 +121,7 @@ impl Analyzer {
                 if pos >= arglist.start_pos && pos <= arglist.end_pos {
                     match scope.field(field.name.original.clone()) {
                         Some(field_def) => {
-                            let result =
-                                Analyzer::find_pos_in_arglist(arglist, pos, &field_def.args);
+                            let result = self.find_pos_in_arglist(arglist, pos, &field_def.args);
                             if result.is_some() {
                                 return result;
                             }
@@ -161,6 +160,7 @@ impl Analyzer {
     }
 
     fn find_pos_in_arglist(
+        &self,
         arglist: &ast::ArgList,
         pos: usize,
         scope: &schema::ArgList,
@@ -198,9 +198,49 @@ impl Analyzer {
                         // In cart field (scope)
                         // On arglist arg key: `input`
                         // -> read type => INPUT_OBJECT (object) of CartInput
+                        let current_arg = match scope.arg(&arg.key.original) {
+                            Some(arg) => arg,
+                            None => {
+                                return Some(AnalyzerResult::DefinitionError(format!(
+                                    "Invalid arg name {}",
+                                    &arg.key.original
+                                )));
+                            }
+                        };
+                        let value_type_name = match &current_arg.arg_type {
+                            schema::TypeClass::Input(name) => name,
+                            _ => {
+                                return Some(AnalyzerResult::DefinitionError(format!(
+                                    "Arg value of key {} exected to be input type",
+                                    arg.key.original
+                                )))
+                            }
+                        };
 
                         // -> lookup CartInput
+                        let value_type = match self.schema.type_definition(value_type_name.clone())
+                        {
+                            Some(ty) => ty,
+                            None => {
+                                return Some(AnalyzerResult::DefinitionError(format!(
+                                    "Type {} not found.",
+                                    &value_type_name
+                                )))
+                            }
+                        };
+
                         // -> get `inputFields`: attributes/lines/discountCodes/...
+                        let value_args = match value_type {
+                            Type::InputObject(input_object) => &input_object.args,
+                            _ => {
+                                return Some(AnalyzerResult::DefinitionError(format!(
+                                    "Type {} is expected to be an input object",
+                                    &value_type_name
+                                )))
+                            }
+                        };
+
+                        return self.find_pos_in_arglist(object, pos, value_args);
 
                         // TODO!!!
                     }
