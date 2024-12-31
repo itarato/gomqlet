@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 use crate::{
-    analyzer::AnalyzerResult,
+    analyzer::Suggestion,
     parser::ParseError,
     terminal_handler::TerminalHandler,
     tokenizer::{Token, TokenKind},
@@ -25,7 +25,9 @@ impl Printer {
         &self,
         tokens: Vec<Token>,
         cursor: CoordUsize,
-        analyzer_result: AnalyzerResult,
+        suggestions: Option<Suggestion>,
+        parse_error: Option<ParseError>,
+        definition_error: Option<String>,
         suggestion_selection_mode: bool,
     ) {
         let mut buf: String = String::new();
@@ -36,7 +38,19 @@ impl Printer {
         let output = self.colorize(tokens);
         buf.push_str(&output);
 
-        self.print_analyzer_result(&mut buf, analyzer_result, suggestion_selection_mode);
+        if let Some(suggestions) = suggestions {
+            self.print_analyzer_result_suggestions(
+                &mut buf,
+                suggestions.elems,
+                suggestion_selection_mode,
+            );
+        }
+
+        if let Some(parse_error) = parse_error {
+            self.print_analyzer_result_parse_error(&mut buf, parse_error);
+        } else if let Some(definition_error) = definition_error {
+            self.print_analyzer_result_definition_error(&mut buf, definition_error);
+        }
 
         TerminalHandler::append_cursor_location(&mut buf, cursor.x, cursor.y);
         TerminalHandler::append_show_cursor(&mut buf);
@@ -46,27 +60,6 @@ impl Printer {
             .expect("Failed writing output");
 
         io::stdout().flush().expect("Cannot flush STDOUT");
-    }
-
-    fn print_analyzer_result(
-        &self,
-        buf: &mut String,
-        analyzer_result: AnalyzerResult,
-        suggestion_selection_mode: bool,
-    ) {
-        match analyzer_result {
-            AnalyzerResult::Suggestion(suggestions) => self.print_analyzer_result_suggestions(
-                buf,
-                suggestions.elems,
-                suggestion_selection_mode,
-            ),
-            AnalyzerResult::DefinitionError(error) => {
-                self.print_analyzer_result_definition_error(buf, error)
-            }
-
-            AnalyzerResult::ParseError(error) => self.print_analyzer_result_parse_error(buf, error),
-            AnalyzerResult::Empty => {}
-        }
     }
 
     fn print_analyzer_result_suggestions(

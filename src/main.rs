@@ -194,15 +194,31 @@ impl Gomqlet {
             })
             .collect::<Vec<_>>();
 
-        let analyzer_result = self.analyzer.analyze(
-            tokens_without_whitecpace,
-            self.content.borrow().new_line_adjusted_cursor_position(),
-        );
-        self.previous_suggestion = analyzer_result.as_suggestion().cloned();
+        let mut parse_error = None;
+        let mut suggestions = None;
+        let mut definition_error = None;
+        match parser::Parser::new(tokens_without_whitecpace).parse() {
+            Ok(root) => {
+                match self.analyzer.analyze(
+                    root,
+                    self.content.borrow().new_line_adjusted_cursor_position(),
+                ) {
+                    Ok(ok) => {
+                        self.previous_suggestion = ok.clone();
+                        suggestions = ok;
+                    }
+                    Err(err) => definition_error = Some(err),
+                };
+            }
+            Err(err) => parse_error = Some(err),
+        }
+
         self.printer.print(
             tokens,
             self.content.borrow().cursor.clone(),
-            analyzer_result,
+            suggestions,
+            parse_error,
+            definition_error,
             self.state == State::SuggestioSelect,
         );
     }
