@@ -42,6 +42,7 @@ Analysis:
     - fieldset
     - fieldset emptiness
 - add type indicator to suggestion list (obj, list, enum, etc)
+- load schema realtime
 
 GraphQL:
 

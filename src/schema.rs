@@ -33,10 +33,29 @@ pub struct Arg {
     arg_type: TypeClass,
 }
 
+pub struct ArgList {
+    elems: Vec<Arg>,
+}
+
+impl ArgList {
+    pub fn arg_names(&self, prefix: &String) -> Vec<String> {
+        self.elems
+            .iter()
+            .filter_map(|arg| {
+                if arg.name.starts_with(prefix) {
+                    Some(arg.name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+}
+
 pub struct Field {
     pub name: String,
     field_type: TypeClass,
-    args: Vec<Arg>,
+    pub args: ArgList,
 }
 
 impl Field {
@@ -49,21 +68,10 @@ impl Field {
         Field {
             name,
             field_type: Field::resolve_type(&node.as_object().unwrap()["type"]),
-            args: Field::resolve_args(node.as_object().unwrap()["args"].as_array().unwrap()),
+            args: ArgList {
+                elems: Field::resolve_args(node.as_object().unwrap()["args"].as_array().unwrap()),
+            },
         }
-    }
-
-    pub fn arg_names(&self, prefix: &String) -> Vec<String> {
-        self.args
-            .iter()
-            .filter_map(|arg| {
-                if arg.name.starts_with(prefix) {
-                    Some(arg.name.clone())
-                } else {
-                    None
-                }
-            })
-            .collect()
     }
 
     fn resolve_type(node: &Value) -> TypeClass {
@@ -134,8 +142,14 @@ pub struct ObjectType {
     fields: Vec<Field>,
 }
 
+pub struct InputObjectType {
+    name: String,
+    args: ArgList,
+}
+
 pub enum Type {
     Object(ObjectType),
+    InputObject(InputObjectType),
 }
 
 impl Type {
@@ -152,6 +166,12 @@ impl Type {
                     }
                 })
                 .collect(),
+            Type::InputObject(input_object) => input_object
+                .args
+                .elems
+                .iter()
+                .map(|arg| arg.name.clone())
+                .collect(),
         }
     }
 
@@ -165,6 +185,7 @@ impl Type {
                 }
                 None
             }
+            Type::InputObject(_) => None,
         }
     }
 }
@@ -211,6 +232,11 @@ impl Schema {
             match ty {
                 Type::Object(object_type) => {
                     if object_type.name == name {
+                        return Some(ty);
+                    }
+                }
+                Type::InputObject(input_object) => {
+                    if input_object.name == name {
                         return Some(ty);
                     }
                 }

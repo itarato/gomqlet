@@ -1,7 +1,7 @@
 use crate::{
-    ast::{ArgList, FieldList, Mutation, Query, Root},
+    ast,
     parser::{ParseError, Parser},
-    schema::{Field, Schema, Type},
+    schema,
     tokenizer::Token,
 };
 
@@ -29,13 +29,13 @@ impl AnalyzerResult {
 }
 
 pub struct Analyzer {
-    schema: Schema,
+    schema: schema::Schema,
 }
 
 impl Analyzer {
     pub fn new() -> Analyzer {
         Analyzer {
-            schema: Schema::new(),
+            schema: schema::Schema::new(),
         }
     }
 
@@ -48,14 +48,14 @@ impl Analyzer {
         }
     }
 
-    fn find_pos_in_root(&self, root: &Root, pos: usize) -> AnalyzerResult {
+    fn find_pos_in_root(&self, root: &ast::Root, pos: usize) -> AnalyzerResult {
         match root {
-            Root::Query(query) => self.find_pos_in_query(query, pos),
-            Root::Mutation(mutation) => self.find_pos_in_mutation(mutation, pos),
+            ast::Root::Query(query) => self.find_pos_in_query(query, pos),
+            ast::Root::Mutation(mutation) => self.find_pos_in_mutation(mutation, pos),
         }
     }
 
-    fn find_pos_in_query(&self, query: &Query, pos: usize) -> AnalyzerResult {
+    fn find_pos_in_query(&self, query: &ast::Query, pos: usize) -> AnalyzerResult {
         let query_scope = match self
             .schema
             .type_definition(self.schema.query_root_name.clone())
@@ -70,7 +70,7 @@ impl Analyzer {
             .unwrap_or(AnalyzerResult::Empty)
     }
 
-    fn find_pos_in_mutation(&self, query: &Mutation, pos: usize) -> AnalyzerResult {
+    fn find_pos_in_mutation(&self, query: &ast::Mutation, pos: usize) -> AnalyzerResult {
         let mutation_scope = match self
             .schema
             .type_definition(self.schema.mutation_root_name.clone())
@@ -89,9 +89,9 @@ impl Analyzer {
 
     fn find_pos_in_field_list(
         &self,
-        field_list: &FieldList,
+        field_list: &ast::FieldList,
         pos: usize,
-        scope: &Type,
+        scope: &schema::Type,
     ) -> Option<AnalyzerResult> {
         if pos < field_list.start_pos || pos >= field_list.end_pos {
             // Outside of the whole query.
@@ -121,7 +121,8 @@ impl Analyzer {
                 if pos >= arglist.start_pos && pos <= arglist.end_pos {
                     match scope.field(field.name.original.clone()) {
                         Some(field_def) => {
-                            let result = Analyzer::find_pos_in_arglist(arglist, pos, field_def);
+                            let result =
+                                Analyzer::find_pos_in_arglist(arglist, pos, &field_def.args);
                             if result.is_some() {
                                 return result;
                             }
@@ -159,7 +160,11 @@ impl Analyzer {
         }))
     }
 
-    fn find_pos_in_arglist(arglist: &ArgList, pos: usize, scope: &Field) -> Option<AnalyzerResult> {
+    fn find_pos_in_arglist(
+        arglist: &ast::ArgList,
+        pos: usize,
+        scope: &schema::ArgList,
+    ) -> Option<AnalyzerResult> {
         if pos < arglist.start_pos || pos > arglist.end_pos {
             return None;
         }
@@ -184,6 +189,27 @@ impl Analyzer {
             } else if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
                 // On arg value.
                 debug!("On arg value: {:?}", arg.value);
+
+                match &arg.value {
+                    crate::ast::ParamValue::Simple(token) => {
+                        // TODO!!!
+                    }
+                    crate::ast::ParamValue::Object(object) => {
+                        // In cart field (scope)
+                        // On arglist arg key: `input`
+                        // -> read type => INPUT_OBJECT (object) of CartInput
+                        // -> lookup CartInput
+                        // -> get `inputFields`: attributes/lines/discountCodes/...
+
+                        // TODO!!!
+                    }
+                    crate::ast::ParamValue::List(list) => {
+                        // TODO!!!
+                    }
+                    crate::ast::ParamValue::Missing(pos) => {
+                        // TODO!!!
+                    }
+                }
 
                 // TODO!!!
                 // todo!("On-value autocomplete (simple,list,object)");
