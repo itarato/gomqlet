@@ -241,8 +241,6 @@ impl Analyzer {
                         };
 
                         return self.find_pos_in_arglist(object, pos, value_args);
-
-                        // TODO!!!
                     }
                     crate::ast::ParamValue::List(list) => {
                         // TODO!!!
