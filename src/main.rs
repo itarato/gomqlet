@@ -6,6 +6,8 @@ use std::{
 };
 
 use analyzer::{Analyzer, Suggestion};
+use clap::Parser;
+use config::Config;
 use editor::{Editor, EditorInput};
 use net_ops::NetOps;
 use printer::Printer;
@@ -20,6 +22,7 @@ extern crate log;
 
 mod analyzer;
 mod ast;
+mod config;
 mod editor;
 mod net_ops;
 mod parser;
@@ -29,6 +32,16 @@ mod terminal_handler;
 mod text;
 mod tokenizer;
 mod util;
+
+#[derive(clap::Parser)]
+#[command(version, about, long_about = None)]
+struct CommandLineParams {
+    #[arg(short, long, value_name = "CONFIG_FILE")]
+    config_file: String,
+
+    #[arg(short, long, value_name = "SOURCE_FILE")]
+    source_file: String,
+}
 
 #[derive(PartialEq)]
 enum State {
@@ -62,7 +75,7 @@ struct Gomqlet {
 }
 
 impl Gomqlet {
-    fn new() -> io::Result<Gomqlet> {
+    fn new(command_line_params: CommandLineParams) -> io::Result<Gomqlet> {
         let terminal_handler = TerminalHandler::new();
         let content = Rc::new(RefCell::new(Text::new()));
         Ok(Gomqlet {
@@ -71,7 +84,7 @@ impl Gomqlet {
             printer: Printer::new(),
             analyzer: Analyzer::new(),
             content,
-            net_ops: NetOps::new(),
+            net_ops: NetOps::new(&command_line_params),
             previous_suggestion: None,
             state: State::Edit,
         })
@@ -238,10 +251,11 @@ fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
 
 fn main() -> io::Result<()> {
     pretty_env_logger::init();
-
     info!("Gomqlet start");
 
-    let mut gomqlet = Gomqlet::new()?;
+    let args = CommandLineParams::parse();
+
+    let mut gomqlet = Gomqlet::new(args)?;
     gomqlet.exec_loop()?;
 
     Ok(())

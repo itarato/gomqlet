@@ -1,2 +1,3 @@
 /target
 misc/shopify.json
+*.config.json

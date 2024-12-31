@@ -1,16 +1,23 @@
-use std::io::Read;
+use std::{fs::File, io::Read};
 
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use serde_json::Value;
 
+use crate::CommandLineParams;
+
 pub struct NetOps {
     client: reqwest::blocking::Client,
+    url: String,
+    headers: Vec<[String; 2]>,
 }
 
 impl NetOps {
-    pub fn new() -> NetOps {
+    pub fn new(command_line_params: &CommandLineParams) -> NetOps {
+        
+
         NetOps {
             client: reqwest::blocking::Client::new(),
+            url: command_line_params.
         }
     }
 
