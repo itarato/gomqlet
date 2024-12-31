@@ -149,12 +149,13 @@ impl Analyzer {
                         // TODO!!!
                     }
                     crate::ast::ParamValue::Object(object) => {
-                        // In cart field (scope)
-                        // On arglist arg key: `input`
-                        // -> read type => INPUT_OBJECT (object) of CartInput
+                        // We are in the <arg-name>: {    } scope. So we expect an object type (aka INPUT_OBJECT).
+                        //                           ^^^^^^
+                        // Get the current arg definition.
                         let current_arg = scope
                             .arg(&arg.key.original)
                             .ok_or(format!("Invalid arg name {}", &arg.key.original))?;
+                        // Get the type name of current arg value.
                         let value_type_name = match &current_arg.arg_type {
                             schema::TypeClass::Input(name) => name,
                             _ => {
@@ -164,14 +165,13 @@ impl Analyzer {
                                 ))
                             }
                         };
-
-                        // -> lookup CartInput
+                        // Get the schema type definition of the arg value's type.
                         let value_type = self
                             .schema
                             .type_definition(value_type_name.clone())
                             .ok_or(format!("Type {} not found.", &value_type_name))?;
 
-                        // -> get `inputFields`: attributes/lines/discountCodes/...
+                        // Get the inner args of that type.
                         let value_args = match value_type {
                             Type::InputObject(input_object) => &input_object.args,
                             _ => {
