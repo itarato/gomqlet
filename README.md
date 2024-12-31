@@ -15,7 +15,6 @@ Features:
 
 Bug:
 
-- if cursor is between arglist key and value the suggestion is affering the parent arglist keywords instead of being empty
 - some suggestion shows after closing braces
 
 Editor:

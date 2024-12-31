@@ -93,7 +93,7 @@ impl Analyzer {
         pos: usize,
         scope: &Type,
     ) -> Option<AnalyzerResult> {
-        if pos < field_list.start_pos || pos > field_list.end_pos {
+        if pos < field_list.start_pos || pos >= field_list.end_pos {
             // Outside of the whole query.
             return None;
         }
@@ -160,50 +160,49 @@ impl Analyzer {
     }
 
     fn find_pos_in_arglist(arglist: &ArgList, pos: usize, scope: &Field) -> Option<AnalyzerResult> {
-        if pos >= arglist.start_pos && pos < arglist.end_pos {
-            // Inside arglist.
-
-            for arg in &arglist.params {
-                if pos > arg.end_pos {
-                    continue;
-                }
-
-                if pos < arg.start_pos {
-                    break;
-                }
-
-                if pos >= arg.key.pos && pos <= arg.key.end_pos() {
-                    // On arg key.
-                    debug!("On key: {}", arg.key.original);
-                    return Some(AnalyzerResult::Suggestion(Suggestion {
-                        elems: scope.arg_names(&arg.key.original),
-                        token: Some(arg.key.clone()),
-                    }));
-                }
-
-                if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
-                    // On arg value.
-                    debug!("On arg value: {:?}", arg.value);
-
-                    // TODO!!!
-                    // todo!("On-value autocomplete (simple,list,object)");
-
-                    // TODO: when the cursor is after the last keyword, the replacement `Missing` type has no length,
-                    //       so this function cannot identify it and offer values options.
-                    //       Maybe make the missing value own a length (between colon and next token)?
-
-                    return Some(AnalyzerResult::Empty);
-                }
-            }
-
-            // In arglist -> offer key.
-            debug!("On arglist.");
-            return Some(AnalyzerResult::Suggestion(Suggestion {
-                elems: scope.arg_names(&String::new()),
-                token: None,
-            }));
+        if pos < arglist.start_pos || pos > arglist.end_pos {
+            return None;
         }
 
-        None
+        // Inside arglist.
+        for arg in &arglist.params {
+            if pos > arg.end_pos {
+                continue;
+            }
+
+            if pos < arg.start_pos {
+                break;
+            }
+
+            if pos >= arg.key.pos && pos <= arg.key.end_pos() {
+                // On arg key.
+                debug!("On key: {}", arg.key.original);
+                return Some(AnalyzerResult::Suggestion(Suggestion {
+                    elems: scope.arg_names(&arg.key.original),
+                    token: Some(arg.key.clone()),
+                }));
+            } else if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
+                // On arg value.
+                debug!("On arg value: {:?}", arg.value);
+
+                // TODO!!!
+                // todo!("On-value autocomplete (simple,list,object)");
+
+                // TODO: when the cursor is after the last keyword, the replacement `Missing` type has no length,
+                //       so this function cannot identify it and offer values options.
+                //       Maybe make the missing value own a length (between colon and next token)?
+
+                return Some(AnalyzerResult::Empty);
+            } else {
+                return Some(AnalyzerResult::Empty);
+            }
+        }
+
+        // In arglist -> offer key.
+        debug!("On arglist.");
+        Some(AnalyzerResult::Suggestion(Suggestion {
+            elems: scope.arg_names(&String::new()),
+            token: None,
+        }))
     }
 }
