@@ -203,6 +203,7 @@ impl Gomqlet {
             tokens,
             self.content.borrow().cursor.clone(),
             analyzer_result,
+            self.state == State::SuggestioSelect,
         );
     }
 

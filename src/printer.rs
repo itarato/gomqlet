@@ -21,7 +21,13 @@ impl Printer {
         }
     }
 
-    pub fn print(&self, tokens: Vec<Token>, cursor: CoordUsize, analyzer_result: AnalyzerResult) {
+    pub fn print(
+        &self,
+        tokens: Vec<Token>,
+        cursor: CoordUsize,
+        analyzer_result: AnalyzerResult,
+        suggestion_selection_mode: bool,
+    ) {
         let mut buf: String = String::new();
         TerminalHandler::append_hide_cursor(&mut buf);
         TerminalHandler::append_clear_screen(&mut buf);
@@ -30,7 +36,7 @@ impl Printer {
         let output = self.colorize(tokens);
         buf.push_str(&output);
 
-        self.print_analyzer_result(&mut buf, analyzer_result);
+        self.print_analyzer_result(&mut buf, analyzer_result, suggestion_selection_mode);
 
         TerminalHandler::append_cursor_location(&mut buf, cursor.x, cursor.y);
         TerminalHandler::append_show_cursor(&mut buf);
@@ -42,11 +48,18 @@ impl Printer {
         io::stdout().flush().expect("Cannot flush STDOUT");
     }
 
-    fn print_analyzer_result(&self, buf: &mut String, analyzer_result: AnalyzerResult) {
+    fn print_analyzer_result(
+        &self,
+        buf: &mut String,
+        analyzer_result: AnalyzerResult,
+        suggestion_selection_mode: bool,
+    ) {
         match analyzer_result {
-            AnalyzerResult::Suggestion(suggestions) => {
-                self.print_analyzer_result_suggestions(buf, suggestions.elems)
-            }
+            AnalyzerResult::Suggestion(suggestions) => self.print_analyzer_result_suggestions(
+                buf,
+                suggestions.elems,
+                suggestion_selection_mode,
+            ),
             AnalyzerResult::DefinitionError(error) => {
                 self.print_analyzer_result_definition_error(buf, error)
             }
@@ -56,7 +69,12 @@ impl Printer {
         }
     }
 
-    fn print_analyzer_result_suggestions(&self, buf: &mut String, suggestions: Vec<String>) {
+    fn print_analyzer_result_suggestions(
+        &self,
+        buf: &mut String,
+        suggestions: Vec<String>,
+        suggestion_selection_mode: bool,
+    ) {
         let popup_width = self.terminal_dimension.0 / POPUP_BAR_WIDTH_DIVIDER;
         let text_width = popup_width - 2;
 
@@ -67,11 +85,21 @@ impl Printer {
                 i,
             );
             buf.push_str("\x1B[44m ");
-            buf.push_str(&format!(
-                "{: <width$}",
-                &suggestions[i][0..text_width.min(suggestions[i].len())],
-                width = text_width
-            ));
+
+            if suggestion_selection_mode && i <= 9 {
+                buf.push_str(&format!(
+                    "\x1B[93m({})\x1B[0m\x1B[44m {: <width$}",
+                    i,
+                    &suggestions[i][0..text_width.min(suggestions[i].len())],
+                    width = text_width - 4
+                ));
+            } else {
+                buf.push_str(&format!(
+                    "{: <width$}",
+                    &suggestions[i][0..text_width.min(suggestions[i].len())],
+                    width = text_width
+                ));
+            }
             buf.push_str(" \x1B[0m");
         }
     }
