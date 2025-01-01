@@ -141,14 +141,14 @@ impl Analyzer {
                 break;
             }
 
-            if pos >= arg.key.pos && pos <= arg.key.end_pos() {
+            if arg.key.range_inclusive().contains(&pos) {
                 // On arg key.
                 debug!("On key: {}", arg.key.original);
                 return Ok(Some(Suggestion {
                     elems: scope.arg_names(&arg.key.original),
                     token: Some(arg.key.clone()),
                 }));
-            } else if pos >= arg.value.start_pos() && pos <= arg.value.end_pos() {
+            } else if arg.value.range_inclusive().contains(&pos) {
                 // On arg value.
                 debug!("On arg value: {:?}", arg.value);
 
