@@ -5,7 +5,7 @@ use crate::{
     parser::ParseError,
     terminal_handler::TerminalHandler,
     tokenizer::{Token, TokenKind},
-    util::{trim_string, CoordUsize},
+    util::{trim_coloured_string_list, CoordUsize},
 };
 
 const POPUP_BAR_WIDTH_DIVIDER: usize = 2;
@@ -69,7 +69,6 @@ impl Printer {
         suggestion_selection_mode: bool,
     ) {
         let popup_width = self.terminal_dimension.0 / POPUP_BAR_WIDTH_DIVIDER;
-        let text_width = popup_width - 2;
 
         for i in 0..suggestions.elems.len() {
             TerminalHandler::append_cursor_location(
@@ -77,22 +76,23 @@ impl Printer {
                 self.terminal_dimension.0 - popup_width,
                 i,
             );
-            buf.push_str("\x1B[44m ");
 
-            let mut line = format!(
-                "{} {}",
-                suggestions.elems[i].name, suggestions.elems[i].kind
-            );
+            let mut line_elems = vec![
+                ("|".to_string(), Some(92)),
+                (suggestions.elems[i].name.clone(), Some(32)),
+                (String::from(" "), None),
+                (suggestions.elems[i].kind.clone(), Some(90)),
+            ];
+
             if suggestion_selection_mode && i <= 9 {
-                line = format!("\x1B[93m({})\x1B[0m\x1B[44m {}", i, line);
+                line_elems.insert(0, (format!("{} ", i), Some(93)));
             }
 
             buf.push_str(&format!(
                 "{: <width$}",
-                trim_string(&line, text_width),
-                width = text_width
+                trim_coloured_string_list(line_elems, popup_width),
+                width = popup_width
             ));
-            buf.push_str(" \x1B[0m");
         }
     }
 
