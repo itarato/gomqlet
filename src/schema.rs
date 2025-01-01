@@ -28,6 +28,19 @@ impl TypeClass {
         }
     }
 
+    pub fn skip_non_null(&self) -> &TypeClass {
+        match self {
+            TypeClass::Object(_) => self,
+            TypeClass::Enum(_) => self,
+            TypeClass::Interface(_) => self,
+            TypeClass::Scalar(_) => self,
+            TypeClass::Input(_) => self,
+            TypeClass::Union(_) => self,
+            TypeClass::NonNull(inner) => inner,
+            TypeClass::List(_) => self,
+        }
+    }
+
     fn from_json_value(node: &Value) -> TypeClass {
         let kind = node.as_object().unwrap()["kind"].as_str().unwrap();
         match kind {
@@ -316,6 +329,8 @@ impl Schema {
             .and_then(|field_definition| {
                 field_definition
                     .field_type
+                    // FIXME: I'm not sure about this one. Removing non-null wrapper is ok but list might not.
+                    //        check if this lies for list types.
                     .underlying_type_name()
                     .ok_or(format!("Field type of {} not found", field_name))
             })

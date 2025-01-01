@@ -193,7 +193,7 @@ impl Analyzer {
             }
             crate::ast::ParamValue::Object(object_arglist) => {
                 // Get the type name of current arg value.
-                let value_type_name = match scope {
+                let value_type_name = match scope.skip_non_null() {
                     schema::TypeClass::Input(name) => name,
                     _ => {
                         return Err(format!(
@@ -228,7 +228,7 @@ impl Analyzer {
             crate::ast::ParamValue::List(list) => {
                 for list_param_value in &list.elems {
                     if list_param_value.range_inclusive().contains(&pos) {
-                        let inner_scope = match &scope {
+                        let inner_scope = match &scope.skip_non_null() {
                             schema::TypeClass::List(inner_type_class) => inner_type_class,
                             _ => {
                                 return Err(format!(
