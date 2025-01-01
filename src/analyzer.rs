@@ -160,54 +160,7 @@ impl Analyzer {
                     .ok_or(format!("Invalid arg name {}", &arg.key.original))?;
                 let current_arg_type = &current_arg.arg_type;
 
-                match &arg.value {
-                    crate::ast::ParamValue::Simple(token) => {
-                        // TODO!!!
-                    }
-                    crate::ast::ParamValue::Object(object_arglist) => {
-                        // Get the type name of current arg value.
-                        let value_type_name = match current_arg_type {
-                            schema::TypeClass::Input(name) => name,
-                            _ => {
-                                return Err(format!(
-                                    "Exected input type for arg value. Got: {:?}",
-                                    current_arg_type,
-                                ))
-                            }
-                        };
-                        // Get the schema type definition of the arg value's type.
-                        let value_type = self
-                            .schema
-                            .type_definition(value_type_name.clone())
-                            .ok_or(format!("Type {} not found.", &value_type_name))?;
-
-                        // Get the inner args of that type.
-                        let value_args = match value_type {
-                            Type::InputObject(input_object) => &input_object.args,
-                            _ => {
-                                return Err(format!(
-                                    "Type {} is expected to be an input object",
-                                    &value_type_name
-                                ))
-                            }
-                        };
-
-                        return if object_arglist.range_exclusive().contains(&pos) {
-                            self.find_pos_in_arglist(object_arglist, pos, value_args)
-                        } else {
-                            Ok(None)
-                        };
-                    }
-                    crate::ast::ParamValue::List(list) => {
-                        for list_param_value in &list.elems {
-                            if list_param_value.range_inclusive().contains(&pos) {}
-                        }
-                        // TODO!!!
-                    }
-                    crate::ast::ParamValue::Missing(pos) => {
-                        // TODO!!!
-                    }
-                }
+                return self.find_pos_in_arglist_value(&arg.value, current_arg_type, pos);
 
                 // TODO!!!
                 // todo!("On-value autocomplete (simple,list,object)");
@@ -226,5 +179,58 @@ impl Analyzer {
             elems: scope.arg_names(&String::new()),
             token: None,
         }))
+    }
+
+    fn find_pos_in_arglist_value(
+        &self,
+        value: &ast::ParamValue,
+        ty: &schema::TypeClass,
+        pos: usize,
+    ) -> AnalyzerResult {
+        match &value {
+            crate::ast::ParamValue::Simple(token) => {
+                // TODO!!!
+            }
+            crate::ast::ParamValue::Object(object_arglist) => {
+                // Get the type name of current arg value.
+                let value_type_name = match ty {
+                    schema::TypeClass::Input(name) => name,
+                    _ => return Err(format!("Exected input type for arg value. Got: {:?}", ty,)),
+                };
+                // Get the schema type definition of the arg value's type.
+                let value_type = self
+                    .schema
+                    .type_definition(value_type_name.clone())
+                    .ok_or(format!("Type {} not found.", &value_type_name))?;
+
+                // Get the inner args of that type.
+                let value_args = match value_type {
+                    Type::InputObject(input_object) => &input_object.args,
+                    _ => {
+                        return Err(format!(
+                            "Type {} is expected to be an input object",
+                            &value_type_name
+                        ))
+                    }
+                };
+
+                return if object_arglist.range_exclusive().contains(&pos) {
+                    self.find_pos_in_arglist(object_arglist, pos, value_args)
+                } else {
+                    Ok(None)
+                };
+            }
+            crate::ast::ParamValue::List(list) => {
+                for list_param_value in &list.elems {
+                    if list_param_value.range_inclusive().contains(&pos) {}
+                }
+                // TODO!!!
+            }
+            crate::ast::ParamValue::Missing(pos) => {
+                // TODO!!!
+            }
+        }
+
+        Ok(None)
     }
 }
