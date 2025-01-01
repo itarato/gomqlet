@@ -152,24 +152,26 @@ impl Analyzer {
                 // On arg value.
                 debug!("On arg value: {:?}", arg.value);
 
+                // We are in the <arg-name>: ______ scope.
+                //                           ^^^^^^
+                // Get the current arg definition.
+                let current_arg = scope
+                    .arg(&arg.key.original)
+                    .ok_or(format!("Invalid arg name {}", &arg.key.original))?;
+                let current_arg_type = &current_arg.arg_type;
+
                 match &arg.value {
                     crate::ast::ParamValue::Simple(token) => {
                         // TODO!!!
                     }
                     crate::ast::ParamValue::Object(object_arglist) => {
-                        // We are in the <arg-name>: {    } scope. So we expect an object type (aka INPUT_OBJECT).
-                        //                           ^^^^^^
-                        // Get the current arg definition.
-                        let current_arg = scope
-                            .arg(&arg.key.original)
-                            .ok_or(format!("Invalid arg name {}", &arg.key.original))?;
                         // Get the type name of current arg value.
-                        let value_type_name = match &current_arg.arg_type {
+                        let value_type_name = match current_arg_type {
                             schema::TypeClass::Input(name) => name,
                             _ => {
                                 return Err(format!(
-                                    "Arg value of key {} exected to be input type",
-                                    arg.key.original
+                                    "Exected input type for arg value. Got: {:?}",
+                                    current_arg_type,
                                 ))
                             }
                         };
@@ -197,6 +199,9 @@ impl Analyzer {
                         };
                     }
                     crate::ast::ParamValue::List(list) => {
+                        for list_param_value in &list.elems {
+                            if list_param_value.range_inclusive().contains(&pos) {}
+                        }
                         // TODO!!!
                     }
                     crate::ast::ParamValue::Missing(pos) => {
@@ -210,11 +215,9 @@ impl Analyzer {
                 // TODO: when the cursor is after the last keyword, the replacement `Missing` type has no length,
                 //       so this function cannot identify it and offer values options.
                 //       Maybe make the missing value own a length (between colon and next token)?
-
-                return Ok(None);
-            } else {
-                return Ok(None);
             }
+
+            return Ok(None);
         }
 
         // In arglist -> offer key.
