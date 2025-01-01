@@ -5,10 +5,10 @@ use crate::{
     parser::ParseError,
     terminal_handler::TerminalHandler,
     tokenizer::{Token, TokenKind},
-    util::CoordUsize,
+    util::{trim_string, CoordUsize},
 };
 
-const POPUP_BAR_WIDTH_DIVIDER: usize = 3;
+const POPUP_BAR_WIDTH_DIVIDER: usize = 2;
 
 pub struct Printer {
     terminal_dimension: (usize, usize),
@@ -41,7 +41,7 @@ impl Printer {
         if let Some(suggestions) = suggestions {
             self.print_analyzer_result_suggestions(
                 &mut buf,
-                suggestions.elems,
+                suggestions,
                 suggestion_selection_mode,
             );
         }
@@ -65,13 +65,13 @@ impl Printer {
     fn print_analyzer_result_suggestions(
         &self,
         buf: &mut String,
-        suggestions: Vec<String>,
+        suggestions: Suggestion,
         suggestion_selection_mode: bool,
     ) {
         let popup_width = self.terminal_dimension.0 / POPUP_BAR_WIDTH_DIVIDER;
         let text_width = popup_width - 2;
 
-        for i in 0..suggestions.len() {
+        for i in 0..suggestions.elems.len() {
             TerminalHandler::append_cursor_location(
                 buf,
                 self.terminal_dimension.0 - popup_width,
@@ -79,20 +79,19 @@ impl Printer {
             );
             buf.push_str("\x1B[44m ");
 
+            let mut line = format!(
+                "{} {}",
+                suggestions.elems[i].name, suggestions.elems[i].kind
+            );
             if suggestion_selection_mode && i <= 9 {
-                buf.push_str(&format!(
-                    "\x1B[93m({})\x1B[0m\x1B[44m {: <width$}",
-                    i,
-                    &suggestions[i][0..text_width.min(suggestions[i].len())],
-                    width = text_width - 4
-                ));
-            } else {
-                buf.push_str(&format!(
-                    "{: <width$}",
-                    &suggestions[i][0..text_width.min(suggestions[i].len())],
-                    width = text_width
-                ));
+                line = format!("\x1B[93m({})\x1B[0m\x1B[44m {}", i, line);
             }
+
+            buf.push_str(&format!(
+                "{: <width$}",
+                trim_string(&line, text_width),
+                width = text_width
+            ));
             buf.push_str(" \x1B[0m");
         }
     }

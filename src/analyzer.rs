@@ -5,8 +5,14 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
+pub struct SuggestionElem {
+    pub name: String,
+    pub kind: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct Suggestion {
-    pub elems: Vec<String>,
+    pub elems: Vec<SuggestionElem>,
     pub token: Option<Token>,
 }
 
@@ -33,8 +39,6 @@ impl Analyzer {
             ast::Root::Mutation(mutation) => self.find_pos_in_mutation(mutation, pos),
         }
     }
-
-    // TODO: Make sure the CALLER IS RESPONSIBLE of knowing if the called scope is ON POS!!!!
 
     fn find_pos_in_query(&self, query: &ast::Query, pos: usize) -> AnalyzerResult {
         let query_scope = self

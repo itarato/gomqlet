@@ -183,13 +183,13 @@ impl Text {
                 let token_start_cursor = self.cursor_of_absolute_position(token.pos);
                 self.lines[token_start_cursor.y].replace_range(
                     token_start_cursor.x..token_start_cursor.x + token.len,
-                    &suggestion.elems[idx],
+                    &suggestion.elems[idx].name,
                 );
-                self.cursor.x = token_start_cursor.x + suggestion.elems[idx].len();
+                self.cursor.x = token_start_cursor.x + suggestion.elems[idx].name.len();
             }
             None => {
-                self.lines[self.cursor.y].insert_str(self.cursor.x, &suggestion.elems[idx]);
-                self.cursor.x += suggestion.elems[idx].len();
+                self.lines[self.cursor.y].insert_str(self.cursor.x, &suggestion.elems[idx].name);
+                self.cursor.x += suggestion.elems[idx].name.len();
             }
         };
     }

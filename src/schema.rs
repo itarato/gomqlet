@@ -1,6 +1,8 @@
-use std::fs::File;
+use std::{fmt, fs::File};
 
 use serde_json::Value;
+
+use crate::analyzer::SuggestionElem;
 
 #[derive(Debug)]
 pub enum TypeClass {
@@ -12,6 +14,21 @@ pub enum TypeClass {
     Scalar(String),
     Input(String),
     Union(String),
+}
+
+impl fmt::Display for TypeClass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TypeClass::Object(name) => write!(f, "Obj<{}>", name),
+            TypeClass::Enum(name) => write!(f, "Enum<{}>", name),
+            TypeClass::Interface(name) => write!(f, "Int<{}>", name),
+            TypeClass::Scalar(name) => write!(f, "Scalar<{}>", name),
+            TypeClass::Input(name) => write!(f, "Input<{}>", name),
+            TypeClass::Union(name) => write!(f, "Union<{}>", name),
+            TypeClass::NonNull(inner) => write!(f, "!{}", inner),
+            TypeClass::List(inner) => write!(f, "[{}]", inner),
+        }
+    }
 }
 
 impl TypeClass {
@@ -111,12 +128,15 @@ pub struct ArgList {
 }
 
 impl ArgList {
-    pub fn arg_names(&self, prefix: &String) -> Vec<String> {
+    pub fn arg_names(&self, prefix: &String) -> Vec<SuggestionElem> {
         self.elems
             .iter()
             .filter_map(|arg| {
                 if arg.name.starts_with(prefix) {
-                    Some(arg.name.clone())
+                    Some(SuggestionElem {
+                        name: arg.name.clone(),
+                        kind: format!("{}", arg.arg_type),
+                    })
                 } else {
                     None
                 }
@@ -137,7 +157,7 @@ impl ArgList {
 
 pub struct Field {
     pub name: String,
-    field_type: TypeClass,
+    pub field_type: TypeClass,
     pub args: ArgList,
 }
 
@@ -218,14 +238,17 @@ impl Type {
         }
     }
 
-    pub fn field_names(&self, prefix: String) -> Vec<String> {
+    pub fn field_names(&self, prefix: String) -> Vec<SuggestionElem> {
         match self {
             Type::Object(object_type) => object_type
                 .fields
                 .iter()
                 .filter_map(|field| {
                     if field.name.starts_with(&prefix) {
-                        Some(field.name.clone())
+                        Some(SuggestionElem {
+                            name: field.name.clone(),
+                            kind: format!("{}", field.field_type),
+                        })
                     } else {
                         None
                     }
@@ -235,7 +258,16 @@ impl Type {
                 .args
                 .elems
                 .iter()
-                .map(|arg| arg.name.clone())
+                .filter_map(|arg| {
+                    if arg.name.starts_with(&prefix) {
+                        Some(SuggestionElem {
+                            name: arg.name.clone(),
+                            kind: format!("{}", arg.arg_type),
+                        })
+                    } else {
+                        None
+                    }
+                })
                 .collect(),
         }
     }
