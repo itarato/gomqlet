@@ -184,7 +184,7 @@ impl Analyzer {
     fn find_pos_in_arglist_value(
         &self,
         value: &ast::ParamValue,
-        ty: &schema::TypeClass,
+        scope: &schema::TypeClass,
         pos: usize,
     ) -> AnalyzerResult {
         match &value {
@@ -193,9 +193,14 @@ impl Analyzer {
             }
             crate::ast::ParamValue::Object(object_arglist) => {
                 // Get the type name of current arg value.
-                let value_type_name = match ty {
+                let value_type_name = match scope {
                     schema::TypeClass::Input(name) => name,
-                    _ => return Err(format!("Exected input type for arg value. Got: {:?}", ty,)),
+                    _ => {
+                        return Err(format!(
+                            "Exected input type for arg value. Got: {:?}",
+                            scope
+                        ))
+                    }
                 };
                 // Get the schema type definition of the arg value's type.
                 let value_type = self
@@ -222,7 +227,19 @@ impl Analyzer {
             }
             crate::ast::ParamValue::List(list) => {
                 for list_param_value in &list.elems {
-                    if list_param_value.range_inclusive().contains(&pos) {}
+                    if list_param_value.range_inclusive().contains(&pos) {
+                        let inner_scope = match &scope {
+                            schema::TypeClass::List(inner_type_class) => inner_type_class,
+                            _ => {
+                                return Err(format!(
+                                    "Exected list type for arg value. Got: {:?}",
+                                    scope
+                                ))
+                            }
+                        };
+
+                        return self.find_pos_in_arglist_value(list_param_value, inner_scope, pos);
+                    }
                 }
                 // TODO!!!
             }
