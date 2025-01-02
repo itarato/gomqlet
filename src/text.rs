@@ -48,6 +48,20 @@ impl Text {
             .insert(self.cursor.x, ch);
 
         self.cursor.x += 1;
+
+        let opposite = match ch {
+            '[' => Some(']'),
+            '(' => Some(')'),
+            '{' => Some('}'),
+            '"' => Some('"'),
+            _ => None,
+        };
+        if let Some(opposite) = opposite {
+            self.lines
+                .get_mut(self.cursor.y)
+                .expect("Missing line")
+                .insert(self.cursor.x, opposite);
+        }
     }
 
     pub fn insert_tab(&mut self) {
