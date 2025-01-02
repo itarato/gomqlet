@@ -1,20 +1,17 @@
 use std::{
     cell::RefCell,
-    collections::HashMap,
     fs::File,
     io::{self, Read},
     rc::Rc,
 };
 
-use analyzer::{Analyzer, Suggestion};
 use clap::Parser;
 use config::Config;
-use editor::{Editor, EditorInput};
+use editor::Editor;
 use net_ops::NetOps;
-use printer::Printer;
+use stdin_reader::{KeyboardInput, StdinReader};
 use terminal_handler::TerminalHandler;
 use text::Text;
-use tokenizer::{Token, TokenKind, Tokenizer};
 
 extern crate pretty_env_logger;
 extern crate termios;
@@ -29,6 +26,7 @@ mod net_ops;
 mod parser;
 mod printer;
 mod schema;
+mod stdin_reader;
 mod terminal_handler;
 mod text;
 mod tokenizer;
@@ -69,32 +67,13 @@ impl CommandLineParams {
 #[derive(PartialEq)]
 enum State {
     Edit,
-    SuggestioSelect,
-}
-
-#[derive(Clone)]
-enum KeyboardInput {
-    Key(u8),
-    CtrlC,
-    CtrlD,
-    Left,
-    Right,
-    Up,
-    Down,
-    Home,
-    End,
-    Delete,
-    AltDigit(u8),
 }
 
 struct Gomqlet {
     terminal_handler: TerminalHandler,
     editor: Editor,
-    printer: Printer,
-    analyzer: Analyzer,
     content: Rc<RefCell<Text>>,
     net_ops: NetOps,
-    previous_suggestion: Option<Suggestion>,
     state: State,
 }
 
@@ -108,131 +87,29 @@ impl Gomqlet {
         Ok(Gomqlet {
             terminal_handler,
             editor: Editor::new(content.clone()),
-            printer: Printer::new(),
-            analyzer: Analyzer::new(),
             content,
             net_ops: NetOps::new(&config),
-            previous_suggestion: None,
             state: State::Edit,
         })
     }
 
     fn exec_loop(&mut self) -> io::Result<()> {
-        let mut stdin = io::stdin();
-        let mut buf: [u8; 8] = [0; 8];
-
-        self.refresh_screen();
+        self.editor.refresh_screen();
 
         loop {
-            let read_len = stdin.read(&mut buf)?;
-            if read_len == 0 {
-                continue;
-            }
-            let cmds = parse_stdin_bytes(&mut buf, read_len);
-
-            for cmd in cmds {
-                match cmd {
-                    KeyboardInput::CtrlC | KeyboardInput::CtrlD => return Ok(()),
-                    KeyboardInput::Key(7) => {
-                        // CTRL-G
-                        self.net_ops
-                            .execute_graphql_operation(self.content.borrow().to_string());
-                    }
-                    KeyboardInput::Key(15) => {
-                        // CTRL-O
-                        self.state = State::SuggestioSelect;
-                    }
-                    KeyboardInput::Key(code) => {
-                        if self.state == State::SuggestioSelect {
-                            if code >= b'0' && code <= b'9' {
-                                self.content.borrow_mut().apply_suggestion(
-                                    self.previous_suggestion.clone().unwrap(),
-                                    (code - b'0') as usize,
-                                );
-                            }
-                            self.state = State::Edit;
-                        } else {
-                            self.editor.parse_input(EditorInput::Char(code));
-                        }
-                    }
-                    KeyboardInput::Left => {
-                        self.editor.parse_input(EditorInput::Left);
-                    }
-                    KeyboardInput::Right => {
-                        self.editor.parse_input(EditorInput::Right);
-                    }
-                    KeyboardInput::Up => {
-                        self.editor.parse_input(EditorInput::Up);
-                    }
-                    KeyboardInput::Down => {
-                        self.editor.parse_input(EditorInput::Down);
-                    }
-                    KeyboardInput::Delete => {
-                        self.editor.parse_input(EditorInput::Delete);
-                    }
-                    KeyboardInput::Home => {
-                        self.editor.parse_input(EditorInput::Home);
-                    }
-                    KeyboardInput::End => {
-                        self.editor.parse_input(EditorInput::End);
-                    }
-                    KeyboardInput::AltDigit(digit) => {
-                        self.content.borrow_mut().apply_suggestion(
-                            self.previous_suggestion.clone().unwrap(),
-                            digit as usize,
-                        );
-                    }
-                };
-
-                self.refresh_screen();
+            for cmd in StdinReader::read_commands()? {
+                if cmd == KeyboardInput::CtrlC || cmd == KeyboardInput::CtrlD {
+                    return Ok(());
+                } else if cmd == KeyboardInput::Key(7) {
+                    // CTRL-G
+                    self.net_ops
+                        .execute_graphql_operation(self.content.borrow().to_string());
+                } else if self.state == State::Edit {
+                    self.editor.parse_input(cmd);
+                    self.editor.refresh_screen();
+                }
             }
         }
-    }
-
-    fn refresh_screen(&mut self) {
-        let tokens = self.build_tokens();
-        let tokens_without_whitecpace = tokens
-            .clone()
-            .into_iter()
-            .filter(|token| match token.kind {
-                TokenKind::Whitespace(_) => false,
-                TokenKind::LineBreak => false,
-                _ => true,
-            })
-            .collect::<Vec<_>>();
-
-        let mut parse_error = None;
-        let mut suggestions = None;
-        let mut definition_error = None;
-        match parser::Parser::new(tokens_without_whitecpace).parse() {
-            Ok(root) => {
-                match self.analyzer.analyze(
-                    root,
-                    self.content.borrow().new_line_adjusted_cursor_position(),
-                ) {
-                    Ok(ok) => {
-                        self.previous_suggestion = ok.clone();
-                        suggestions = ok;
-                    }
-                    Err(err) => definition_error = Some(err),
-                };
-            }
-            Err(err) => parse_error = Some(err),
-        }
-
-        self.printer.print(
-            tokens,
-            self.content.borrow().cursor.clone(),
-            suggestions,
-            parse_error,
-            definition_error,
-            self.state == State::SuggestioSelect,
-        );
-    }
-
-    // TODO: Position is not accurate in a global context. Make the printer able to work with a single list (not nested).
-    fn build_tokens(&self) -> Vec<Token> {
-        Tokenizer::tokenize_lines(&self.content.borrow().lines, true)
     }
 }
 
@@ -242,66 +119,6 @@ impl Drop for Gomqlet {
             .terminal_restore_mode()
             .expect("Failed reverting terminal mode.");
     }
-}
-
-fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
-    let escape_combos: HashMap<Vec<u8>, KeyboardInput> = HashMap::from([
-        (vec![27, 91, 65], KeyboardInput::Up),
-        (vec![27, 91, 66], KeyboardInput::Down),
-        (vec![27, 91, 67], KeyboardInput::Right),
-        (vec![27, 91, 68], KeyboardInput::Left),
-        (vec![27, 91, 72], KeyboardInput::Home),
-        (vec![27, 91, 70], KeyboardInput::End),
-        (vec![27, 91, 51, 126], KeyboardInput::Delete),
-        (vec![27, 48], KeyboardInput::AltDigit(0)),
-        (vec![27, 49], KeyboardInput::AltDigit(1)),
-        (vec![27, 50], KeyboardInput::AltDigit(2)),
-        (vec![27, 51], KeyboardInput::AltDigit(3)),
-        (vec![27, 52], KeyboardInput::AltDigit(4)),
-        (vec![27, 53], KeyboardInput::AltDigit(5)),
-        (vec![27, 54], KeyboardInput::AltDigit(6)),
-        (vec![27, 55], KeyboardInput::AltDigit(7)),
-        (vec![27, 56], KeyboardInput::AltDigit(8)),
-        (vec![27, 57], KeyboardInput::AltDigit(9)),
-    ]);
-    let mut i = 0usize;
-    let mut out = vec![];
-
-    debug!("{:?}", &buf[0..len]);
-
-    while i < len {
-        if buf[i] == 27 {
-            for (seq, ki) in &escape_combos {
-                if i + seq.len() <= len {
-                    if seq.as_slice() == &buf[i..i + seq.len()] {
-                        out.push(ki.clone());
-                        i += seq.len();
-                        break;
-                    }
-                }
-            }
-
-            // We didn't hit the combo - possibly unmapped one.
-            if i != len {
-                warn!("Unmapped combo {:?}", &buf[i..len]);
-            }
-
-            // We might ignore real multi key input - however that's a price to pay as long as we're not mapping
-            // all escape sequenced combos.
-            i = len;
-        } else if buf[i] == 3 {
-            out.push(KeyboardInput::CtrlC);
-            i += 1;
-        } else if buf[i] == 4 {
-            out.push(KeyboardInput::CtrlD);
-            i += 1;
-        } else {
-            out.push(KeyboardInput::Key(buf[i]));
-            i += 1;
-        }
-    }
-
-    out
 }
 
 fn main() -> io::Result<()> {
