@@ -31,11 +31,7 @@ impl Text {
             .expect("Missing line")
             .truncate(self.cursor.x);
 
-        let mut new_line_spaces_len = self.front_space_length(self.cursor.y);
-        if self.line_ends_with_open_paren(self.cursor.y) {
-            new_line_spaces_len += TAB_SIZE;
-        }
-
+        let new_line_spaces_len = self.front_space_length(self.cursor.y);
         let new_prefix = String::from_utf8(vec![b' '; new_line_spaces_len]).unwrap();
         fragment_to_split.insert_str(0, &new_prefix);
 
@@ -224,13 +220,5 @@ impl Text {
         debug!("pos={} i={} y={}", pos, i, y);
 
         CoordUsize { x: pos - i, y }
-    }
-
-    fn line_ends_with_open_paren(&self, line_idx: usize) -> bool {
-        if let Some(ch) = self.lines[line_idx].chars().last() {
-            ch == '(' || ch == '[' || ch == '{'
-        } else {
-            false
-        }
     }
 }
