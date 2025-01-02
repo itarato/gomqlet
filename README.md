@@ -20,7 +20,6 @@ Bug:
 Editor:
 
 - enter on an opening paren/brace/bracket should be +1 indent
-- adding an opening parent/brace/bracket should add the closing one too
 - save to file
 
 Tokenizier:
@@ -41,7 +40,6 @@ Analysis:
     - arg requirement
     - fieldset
     - fieldset emptiness
-- add type indicator to suggestion list (obj, list, enum, etc)
 - load schema realtime
 
 GraphQL:
