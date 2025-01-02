@@ -8,8 +8,20 @@ Features:
 - syntax highlight
 - tokenizer + parser
 - autocompletion
-- error detection
+- (basic) error detection
 - query / mutation exection (over HTTP)
+
+## Use
+
+```bash
+cargo run -- -h
+```
+
+Bindings:
+
+- `CTRL-O` and then `DIGIT` / `ALT-<DIGIT>`: apply suggestion
+- `CTRL-G`: execute query
+- `CTRL-C`: quit application
 
 ## Todo
 

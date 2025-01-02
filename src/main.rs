@@ -84,6 +84,7 @@ enum KeyboardInput {
     Home,
     End,
     Delete,
+    AltDigit(u8),
 }
 
 struct Gomqlet {
@@ -175,6 +176,12 @@ impl Gomqlet {
                     KeyboardInput::End => {
                         self.editor.parse_input(EditorInput::End);
                     }
+                    KeyboardInput::AltDigit(digit) => {
+                        self.content.borrow_mut().apply_suggestion(
+                            self.previous_suggestion.clone().unwrap(),
+                            digit as usize,
+                        );
+                    }
                 };
 
                 self.refresh_screen();
@@ -246,6 +253,16 @@ fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
         (vec![27, 91, 72], KeyboardInput::Home),
         (vec![27, 91, 70], KeyboardInput::End),
         (vec![27, 91, 51, 126], KeyboardInput::Delete),
+        (vec![27, 48], KeyboardInput::AltDigit(0)),
+        (vec![27, 49], KeyboardInput::AltDigit(1)),
+        (vec![27, 50], KeyboardInput::AltDigit(2)),
+        (vec![27, 51], KeyboardInput::AltDigit(3)),
+        (vec![27, 52], KeyboardInput::AltDigit(4)),
+        (vec![27, 53], KeyboardInput::AltDigit(5)),
+        (vec![27, 54], KeyboardInput::AltDigit(6)),
+        (vec![27, 55], KeyboardInput::AltDigit(7)),
+        (vec![27, 56], KeyboardInput::AltDigit(8)),
+        (vec![27, 57], KeyboardInput::AltDigit(9)),
     ]);
     let mut i = 0usize;
     let mut out = vec![];
