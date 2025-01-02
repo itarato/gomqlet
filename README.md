@@ -19,7 +19,6 @@ Bug:
 
 Editor:
 
-- enter on an opening paren/brace/bracket should be +1 indent
 - save to file
 
 Tokenizier:
