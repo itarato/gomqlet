@@ -31,7 +31,7 @@ impl Editor {
         }
     }
 
-    pub fn parse_input(&mut self, input: KeyboardInput) {
+    pub fn update(&mut self, input: KeyboardInput) {
         match input {
             KeyboardInput::Key(15) => {
                 // CTRL-O
@@ -66,6 +66,8 @@ impl Editor {
                 debug!("Unrecognized editor input: {:?}", input);
             }
         }
+
+        self.refresh_screen();
     }
 
     fn handle_char_input(&mut self, ch: u8) {
@@ -118,7 +120,6 @@ impl Editor {
         );
     }
 
-    // TODO: Position is not accurate in a global context. Make the printer able to work with a single list (not nested).
     fn build_tokens(&self) -> Vec<Token> {
         Tokenizer::tokenize_lines(&self.content.borrow().lines, true)
     }

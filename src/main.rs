@@ -67,6 +67,7 @@ impl CommandLineParams {
 #[derive(PartialEq)]
 enum State {
     Edit,
+    FileSelector,
 }
 
 struct Gomqlet {
@@ -104,9 +105,10 @@ impl Gomqlet {
                     // CTRL-G
                     self.net_ops
                         .execute_graphql_operation(self.content.borrow().to_string());
+                } else if cmd == KeyboardInput::AltF {
+                    self.state = State::FileSelector;
                 } else if self.state == State::Edit {
-                    self.editor.parse_input(cmd);
-                    self.editor.refresh_screen();
+                    self.editor.update(cmd);
                 }
             }
         }
