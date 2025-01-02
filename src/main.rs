@@ -238,12 +238,6 @@ impl Drop for Gomqlet {
 }
 
 fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
-    /*
-     * Up:    27 91 65
-     * Down:  27 91 66
-     * Right: 27 91 67
-     * Left:  27 91 68
-     */
     let escape_combos: HashMap<Vec<u8>, KeyboardInput> = HashMap::from([
         (vec![27, 91, 65], KeyboardInput::Up),
         (vec![27, 91, 66], KeyboardInput::Down),
