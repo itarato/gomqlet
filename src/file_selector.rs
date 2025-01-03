@@ -51,7 +51,7 @@ impl FileSelector {
     pub fn refresh_screen(&self) {
         let files = FileSelector::files(&self.folder);
 
-        self.printer.print(files, self.file_index);
+        self.printer.print(&self.folder, files, self.file_index);
     }
 
     fn files(folder: &PathBuf) -> Vec<PathBuf> {

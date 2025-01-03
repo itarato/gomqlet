@@ -10,12 +10,9 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn new(source: Option<String>) -> Text {
+    pub fn new(source: String) -> Text {
         // TODO: lets use Option<PathBuf> here and use `reload_from_file`.
-        let lines = match source {
-            Some(s) => s.lines().map(|slice| slice.to_string()).collect(),
-            None => vec![String::new()],
-        };
+        let lines = source.lines().map(|slice| slice.to_string()).collect();
 
         Text {
             lines,

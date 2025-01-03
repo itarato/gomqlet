@@ -84,8 +84,9 @@ impl EditorPrinter {
                 (suggestions.elems[i].kind.clone(), Some(90)),
             ];
 
-            if suggestion_selection_mode && i <= 9 {
-                line_elems.insert(0, (format!("{} ", i), Some(93)));
+            if i <= 9 {
+                let number_color = if suggestion_selection_mode { 93 } else { 90 };
+                line_elems.insert(1, (format!("{} ", i), Some(number_color)));
             }
 
             buf.push_str(&format!(

@@ -33,6 +33,7 @@ Bug:
 Editor:
 
 - save to file
+- paging/scrolling
 
 Tokenizier:
 
@@ -53,6 +54,10 @@ Analysis:
     - fieldset
     - fieldset emptiness
 - load schema realtime
+
+File browser:
+
+- create new file
 
 GraphQL:
 

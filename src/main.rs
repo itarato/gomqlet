@@ -103,8 +103,14 @@ struct Gomqlet {
 
 impl Gomqlet {
     fn new(command_line_params: CommandLineParams) -> io::Result<Gomqlet> {
+        let source = command_line_params.source();
+        let state = if source.is_some() {
+            State::Editor
+        } else {
+            State::FileSelector
+        };
         let terminal_handler = TerminalHandler::new();
-        let content = Rc::new(RefCell::new(Text::new(command_line_params.source())));
+        let content = Rc::new(RefCell::new(Text::new(source.unwrap_or(String::new()))));
         let config = command_line_params.config();
         let source_folder = command_line_params.source_folder();
 
@@ -114,7 +120,7 @@ impl Gomqlet {
             file_selector: FileSelector::new(source_folder),
             content,
             net_ops: NetOps::new(&config),
-            state: State::Editor,
+            state,
         })
     }
 
