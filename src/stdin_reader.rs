@@ -17,6 +17,7 @@ pub enum KeyboardInput {
     Delete,
     AltDigit(u8),
     AltF,
+    CtrlF,
 }
 
 pub struct StdinReader;
@@ -85,6 +86,9 @@ impl StdinReader {
                 i += 1;
             } else if buf[i] == 4 {
                 out.push(KeyboardInput::CtrlD);
+                i += 1;
+            } else if buf[i] == 6 {
+                out.push(KeyboardInput::CtrlF);
                 i += 1;
             } else {
                 out.push(KeyboardInput::Key(buf[i]));

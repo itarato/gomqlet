@@ -88,7 +88,7 @@ impl CommandLineParams {
 
 #[derive(PartialEq)]
 enum State {
-    Edit,
+    Editor,
     FileSelector,
 }
 
@@ -114,12 +114,15 @@ impl Gomqlet {
             file_selector: FileSelector::new(source_folder),
             content,
             net_ops: NetOps::new(&config),
-            state: State::Edit,
+            state: State::Editor,
         })
     }
 
     fn exec_loop(&mut self) -> io::Result<()> {
-        self.editor.refresh_screen();
+        match self.state {
+            State::Editor => self.editor.refresh_screen(),
+            State::FileSelector => self.file_selector.refresh_screen(),
+        }
 
         loop {
             for cmd in StdinReader::read_commands()? {
@@ -129,10 +132,22 @@ impl Gomqlet {
                     // CTRL-G
                     self.net_ops
                         .execute_graphql_operation(self.content.borrow().to_string());
-                } else if cmd == KeyboardInput::AltF {
+                } else if cmd == KeyboardInput::AltF || cmd == KeyboardInput::CtrlF {
                     self.state = State::FileSelector;
-                } else if self.state == State::Edit {
+                    self.file_selector.refresh_screen();
+                } else if self.state == State::Editor {
                     self.editor.update(cmd);
+                } else if self.state == State::FileSelector {
+                    match self.file_selector.update(cmd) {
+                        Some(file_selector::Command::OpenFile(path)) => {
+                            self.state = State::Editor;
+                            self.content.borrow_mut().reload_from_file(path);
+                            self.editor.refresh_screen();
+                        }
+                        _ => {}
+                    };
+                } else {
+                    unreachable!("Invalid state");
                 }
             }
         }

@@ -1,3 +1,5 @@
+use std::{fs::File, io::Read, path::PathBuf};
+
 use crate::{analyzer::Suggestion, util::CoordUsize};
 
 const TAB_SIZE: usize = 2;
@@ -9,6 +11,7 @@ pub struct Text {
 
 impl Text {
     pub fn new(source: Option<String>) -> Text {
+        // TODO: lets use Option<PathBuf> here and use `reload_from_file`.
         let lines = match source {
             Some(s) => s.lines().map(|slice| slice.to_string()).collect(),
             None => vec![String::new()],
@@ -18,6 +21,17 @@ impl Text {
             lines,
             cursor: CoordUsize { x: 0, y: 0 },
         }
+    }
+
+    pub fn reload_from_file(&mut self, path: PathBuf) {
+        let mut file = File::open(path).expect("Cannot load source file");
+        let mut content = String::new();
+
+        file.read_to_string(&mut content)
+            .expect("Failed reading content of source");
+
+        self.lines = content.lines().map(|slice| slice.to_string()).collect();
+        self.cursor = CoordUsize { x: 0, y: 0 };
     }
 
     pub fn to_string(&self) -> String {
