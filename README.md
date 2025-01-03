@@ -22,7 +22,7 @@ Bindings:
 - `CTRL-O` and then `DIGIT` / `ALT-<DIGIT>`: apply suggestion
 - `CTRL-G`: execute query
 - `CTRL-C`: quit application
-- `ALT-F`: file browser
+- `ALT-F` / `CTRL-F`: file browser
 
 ## Todo
 
