@@ -1,13 +1,15 @@
 use std::{
     cell::RefCell,
-    fs::File,
+    fs::{self, File},
     io::{self, Read},
+    path::{Path, PathBuf},
     rc::Rc,
 };
 
 use clap::Parser;
 use config::Config;
 use editor::Editor;
+use file_selector::FileSelector;
 use net_ops::NetOps;
 use stdin_reader::{KeyboardInput, StdinReader};
 use terminal_handler::TerminalHandler;
@@ -22,9 +24,11 @@ mod analyzer;
 mod ast;
 mod config;
 mod editor;
+mod editor_printer;
+mod file_selector;
+mod file_selector_printer;
 mod net_ops;
 mod parser;
-mod printer;
 mod schema;
 mod stdin_reader;
 mod terminal_handler;
@@ -38,8 +42,11 @@ struct CommandLineParams {
     #[arg(short, long, value_name = "CONFIG_FILE")]
     config_file: String,
 
-    #[arg(short, long, value_name = "SOURCE_FILE")]
+    #[arg(long, value_name = "SOURCE_FILE")]
     source_file: Option<String>,
+
+    #[arg(long, value_name = "SOURCE_FOLDER")]
+    source_folder: Option<String>,
 }
 
 impl CommandLineParams {
@@ -62,6 +69,21 @@ impl CommandLineParams {
             None => None,
         }
     }
+
+    fn source_folder(&self) -> PathBuf {
+        if let Some(ref source_folder) = self.source_folder {
+            PathBuf::from(source_folder)
+        } else if let Some(ref source_file) = self.source_file {
+            let mut path = fs::canonicalize(PathBuf::from(source_file))
+                .expect("Failed to get path of source file");
+            path.pop();
+
+            path
+        } else {
+            fs::canonicalize(PathBuf::from("./"))
+                .expect("Failed to get absolute path for current dir")
+        }
+    }
 }
 
 #[derive(PartialEq)]
@@ -73,6 +95,7 @@ enum State {
 struct Gomqlet {
     terminal_handler: TerminalHandler,
     editor: Editor,
+    file_selector: FileSelector,
     content: Rc<RefCell<Text>>,
     net_ops: NetOps,
     state: State,
@@ -82,12 +105,13 @@ impl Gomqlet {
     fn new(command_line_params: CommandLineParams) -> io::Result<Gomqlet> {
         let terminal_handler = TerminalHandler::new();
         let content = Rc::new(RefCell::new(Text::new(command_line_params.source())));
-
         let config = command_line_params.config();
+        let source_folder = command_line_params.source_folder();
 
         Ok(Gomqlet {
             terminal_handler,
             editor: Editor::new(content.clone()),
+            file_selector: FileSelector::new(source_folder),
             content,
             net_ops: NetOps::new(&config),
             state: State::Edit,

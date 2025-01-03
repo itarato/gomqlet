@@ -1,8 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::analyzer::{Analyzer, Suggestion};
+use crate::editor_printer::EditorPrinter;
 use crate::parser;
-use crate::printer::Printer;
 use crate::tokenizer::{Token, TokenKind, Tokenizer};
 use crate::{stdin_reader::KeyboardInput, text::Text};
 
@@ -17,7 +17,7 @@ pub struct Editor {
     analyzer: Analyzer,
     state: State,
     previous_suggestion: Option<Suggestion>,
-    printer: Printer,
+    printer: EditorPrinter,
 }
 
 impl Editor {
@@ -27,7 +27,7 @@ impl Editor {
             analyzer: Analyzer::new(),
             state: State::Edit,
             previous_suggestion: None,
-            printer: Printer::new(),
+            printer: EditorPrinter::new(),
         }
     }
 
