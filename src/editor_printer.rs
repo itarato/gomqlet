@@ -12,17 +12,21 @@ const POPUP_BAR_WIDTH_DIVIDER: usize = 2;
 
 pub struct EditorPrinter {
     terminal_dimension: (usize, usize),
+    // Text scroll up   = positive range
+    // Text scroll down = negative range
+    vscroll: usize,
 }
 
 impl EditorPrinter {
     pub fn new() -> EditorPrinter {
         EditorPrinter {
             terminal_dimension: term_size::dimensions().unwrap(),
+            vscroll: 0,
         }
     }
 
     pub fn print(
-        &self,
+        &mut self,
         tokens: Vec<Token>,
         cursor: CoordUsize,
         suggestions: Option<Suggestion>,
@@ -33,10 +37,8 @@ impl EditorPrinter {
         let mut buf: String = String::new();
         TerminalHandler::append_hide_cursor(&mut buf);
         TerminalHandler::append_clear_screen(&mut buf);
-        TerminalHandler::append_cursor_location(&mut buf, 0, 0);
 
-        let output = self.colorize(tokens);
-        buf.push_str(&output);
+        self.print_tokens(&mut buf, tokens, cursor.y);
 
         if let Some(suggestions) = suggestions {
             self.print_analyzer_result_suggestions(
@@ -52,7 +54,7 @@ impl EditorPrinter {
             self.print_analyzer_result_definition_error(&mut buf, definition_error);
         }
 
-        TerminalHandler::append_cursor_location(&mut buf, cursor.x, cursor.y);
+        TerminalHandler::append_cursor_location(&mut buf, cursor.x, cursor.y - self.vscroll);
         TerminalHandler::append_show_cursor(&mut buf);
 
         io::stdout()
@@ -60,6 +62,37 @@ impl EditorPrinter {
             .expect("Failed writing output");
 
         io::stdout().flush().expect("Cannot flush STDOUT");
+    }
+
+    fn print_tokens(&mut self, buf: &mut String, tokens: Vec<Token>, cursor_y: usize) {
+        TerminalHandler::append_cursor_location(buf, 0, 0);
+
+        self.resolve_vscroll(cursor_y);
+        let output = self.colorize(tokens);
+
+        let lines = output.lines().collect::<Vec<_>>();
+
+        let last_line_index = lines.len().min(self.terminal_height() + self.vscroll);
+        for i in self.vscroll..last_line_index {
+            if i > self.vscroll {
+                buf.push_str("\n\r");
+            }
+
+            buf.push_str(lines[i]);
+        }
+    }
+
+    fn resolve_vscroll(&mut self, cursor_y: usize) {
+        debug!("WAS vscroll={} cursor_y={}", self.vscroll, cursor_y);
+
+        let global_cursor_y = cursor_y as i32 - self.vscroll as i32;
+
+        if global_cursor_y < 0 {
+            self.vscroll = (self.vscroll as i32 + global_cursor_y) as usize;
+        } else if global_cursor_y >= self.terminal_height() as i32 {
+            self.vscroll += global_cursor_y as usize - self.terminal_height() + 1;
+        }
+        debug!("BECAME vscroll={} cursor_y={}", self.vscroll, cursor_y);
     }
 
     fn print_analyzer_result_suggestions(
