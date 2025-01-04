@@ -25,6 +25,8 @@ impl NetOps {
             request = request.header(key, value);
         }
 
+        let body = body.replace('"', "\\\"");
+
         let mut response = request
             .body(format!("{{ \"query\": \"{}\" }}", body))
             .send()
