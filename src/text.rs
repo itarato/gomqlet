@@ -28,6 +28,10 @@ impl Text {
             .expect("Failed reading content of source");
 
         self.lines = content.lines().map(|slice| slice.to_string()).collect();
+        if self.lines.is_empty() {
+            self.lines = vec![String::new()];
+        }
+
         self.cursor = CoordUsize { x: 0, y: 0 };
     }
 

@@ -19,7 +19,13 @@ impl FileSelectorPrinter {
         FileSelectorPrinter
     }
 
-    pub fn print(&self, folder: &PathBuf, file_paths: Vec<PathBuf>, selected_index: usize) {
+    pub fn print(
+        &self,
+        folder: &PathBuf,
+        file_paths: Vec<PathBuf>,
+        selected_index: usize,
+        new_file_name: &Option<String>,
+    ) {
         let mut buf: String = String::new();
         TerminalHandler::append_hide_cursor(&mut buf);
         TerminalHandler::append_clear_screen(&mut buf);
@@ -34,11 +40,22 @@ impl FileSelectorPrinter {
             .iter()
             .map(|e| e.to_str().unwrap())
             .collect::<Vec<_>>();
-        elems.insert(0, "Create new file");
+
+        let first_line = match new_file_name {
+            Some(file_name) => {
+                format!(
+                    "New file: {}/{}.graphql",
+                    folder.to_str().unwrap(),
+                    file_name
+                )
+            }
+            None => "Create new file".to_string(),
+        };
+        elems.insert(0, &first_line);
 
         for (i, elem) in elems.iter().enumerate() {
             if selected_index == i {
-                buf.push_str(&format!("+-- \x1B[104m#{}: {}\x1B[0m", i, elem));
+                buf.push_str(&format!("+-- \x1B[44m#{}: {}\x1B[0m", i, elem));
             } else {
                 buf.push_str(&format!("+-- \x1B[34m#{}: {}\x1B[0m", i, elem));
             }
