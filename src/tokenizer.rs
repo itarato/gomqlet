@@ -38,7 +38,7 @@ pub enum TokenKind {
     CloseBracket, // ]
     Colon,
     Comma,
-    IntNumber(i32),
+    IntNumber(String),
     Keyword(String),
     Str(String),
     Whitespace(String),
@@ -200,10 +200,12 @@ impl Tokenizer {
             *pos += 1;
         }
 
+        let fragment_len = fragment.len();
+
         Token::new(
-            TokenKind::IntNumber(i32::from_str_radix(&fragment, 10).expect("Invalid number")),
-            *pos - fragment.len(),
-            fragment.len(),
+            TokenKind::IntNumber(fragment.clone()),
+            *pos - fragment_len,
+            fragment_len,
             fragment,
         )
     }
@@ -310,7 +312,7 @@ mod test {
         assert_eq!(TokenKind::OpenParen, tokens[2].kind);
         assert_eq!(TokenKind::Keyword("first".into()), tokens[3].kind);
         assert_eq!(TokenKind::Colon, tokens[4].kind);
-        assert_eq!(TokenKind::IntNumber(1), tokens[5].kind);
+        assert_eq!(TokenKind::IntNumber("1".to_string()), tokens[5].kind);
         assert_eq!(TokenKind::CloseParen, tokens[6].kind);
         assert_eq!(TokenKind::CloseBrace, tokens[7].kind);
     }
@@ -344,7 +346,7 @@ mod test {
             tokens[1]
         );
         assert_eq!(
-            Token::new(TokenKind::IntNumber(123), 13, 3, "123".into()),
+            Token::new(TokenKind::IntNumber("123".to_string()), 13, 3, "123".into()),
             tokens[2]
         );
         assert_eq!(

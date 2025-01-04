@@ -58,6 +58,7 @@ impl Editor {
             KeyboardInput::Delete => self.content.borrow_mut().delete(),
             KeyboardInput::Home => self.content.borrow_mut().move_cursor_to_home(),
             KeyboardInput::End => self.content.borrow_mut().move_cursor_to_end(),
+            KeyboardInput::AltS => self.content.borrow_mut().save_to_file(),
             KeyboardInput::AltDigit(digit) => {
                 self.content
                     .borrow_mut()

@@ -1,4 +1,8 @@
-use std::{fs::File, io::Read, path::PathBuf};
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::PathBuf,
+};
 
 use crate::{analyzer::Suggestion, util::CoordUsize};
 
@@ -7,21 +11,33 @@ const TAB_SIZE: usize = 2;
 pub struct Text {
     pub lines: Vec<String>,
     pub cursor: CoordUsize,
+    pub file_path: Option<PathBuf>,
 }
 
 impl Text {
-    pub fn new(source: String) -> Text {
+    pub fn new(file_path: Option<PathBuf>) -> Text {
         // TODO: lets use Option<PathBuf> here and use `reload_from_file`.
-        let lines = source.lines().map(|slice| slice.to_string()).collect();
+        let lines = if let Some(file_path) = &file_path {
+            let mut file = File::open(file_path).expect("Cannot load source file");
+            let mut source = String::new();
+
+            file.read_to_string(&mut source)
+                .expect("Failed reading content of source");
+
+            source.lines().map(|slice| slice.to_string()).collect()
+        } else {
+            vec![String::new()]
+        };
 
         Text {
             lines,
             cursor: CoordUsize { x: 0, y: 0 },
+            file_path,
         }
     }
 
     pub fn reload_from_file(&mut self, path: PathBuf) {
-        let mut file = File::open(path).expect("Cannot load source file");
+        let mut file = File::open(&path).expect("Cannot load source file");
         let mut content = String::new();
 
         file.read_to_string(&mut content)
@@ -33,10 +49,20 @@ impl Text {
         }
 
         self.cursor = CoordUsize { x: 0, y: 0 };
+        self.file_path = Some(path)
     }
 
     pub fn to_string(&self) -> String {
-        self.lines.join("")
+        self.lines.join("\n")
+    }
+
+    pub fn save_to_file(&mut self) {
+        let mut file = File::create(self.file_path.as_ref().expect("Missing file"))
+            .expect("Failed opening file to save.");
+        file.write_all(self.to_string().as_bytes())
+            .expect("Failed writing to file");
+
+        info!("File has been saved to {:?}", self.file_path);
     }
 
     pub fn insert_new_line(&mut self) {

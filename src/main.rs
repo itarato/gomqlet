@@ -55,21 +55,6 @@ impl CommandLineParams {
         serde_json::from_reader(file).unwrap()
     }
 
-    fn source(&self) -> Option<String> {
-        match &self.source_file {
-            Some(source) => {
-                let mut file = File::open(source).expect("Cannot load source file");
-                let mut content = String::new();
-
-                file.read_to_string(&mut content)
-                    .expect("Failed reading content of source");
-
-                Some(content)
-            }
-            None => None,
-        }
-    }
-
     fn source_folder(&self) -> PathBuf {
         if let Some(ref source_folder) = self.source_folder {
             PathBuf::from(source_folder)
@@ -103,14 +88,18 @@ struct Gomqlet {
 
 impl Gomqlet {
     fn new(command_line_params: CommandLineParams) -> io::Result<Gomqlet> {
-        let source = command_line_params.source();
-        let state = if source.is_some() {
+        let state = if command_line_params.source_file.is_some() {
             State::Editor
         } else {
             State::FileSelector
         };
         let terminal_handler = TerminalHandler::new();
-        let content = Rc::new(RefCell::new(Text::new(source.unwrap_or(String::new()))));
+        let content = Rc::new(RefCell::new(Text::new(
+            command_line_params
+                .source_file
+                .clone()
+                .map(|file_path| PathBuf::from(file_path)),
+        )));
         let config = command_line_params.config();
         let source_folder = command_line_params.source_folder();
 

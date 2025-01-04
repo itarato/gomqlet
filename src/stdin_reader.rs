@@ -17,6 +17,7 @@ pub enum KeyboardInput {
     Delete,
     AltDigit(u8),
     AltF,
+    AltS,
     CtrlF,
 }
 
@@ -55,6 +56,7 @@ impl StdinReader {
             (vec![27, 56], KeyboardInput::AltDigit(8)),
             (vec![27, 57], KeyboardInput::AltDigit(9)),
             (vec![27, 102], KeyboardInput::AltF),
+            (vec![27, 115], KeyboardInput::AltS),
         ]);
         let mut i = 0usize;
         let mut out = vec![];
