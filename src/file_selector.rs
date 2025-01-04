@@ -8,7 +8,7 @@ pub enum Command {
 
 pub struct FileSelector {
     folder: PathBuf,
-    file_index: usize,
+    selection_index: usize,
     printer: FileSelectorPrinter,
     files: Vec<PathBuf>,
 }
@@ -19,26 +19,43 @@ impl FileSelector {
 
         FileSelector {
             folder,
-            file_index: 0,
+            selection_index: 0,
             printer: FileSelectorPrinter::new(),
             files,
         }
     }
 
+    fn elem_len(&self) -> usize {
+        self.files.len() + 1
+    }
+
     pub fn update(&mut self, input: KeyboardInput) -> Option<Command> {
         match input {
             KeyboardInput::AltDigit(value) => {
-                self.file_index = value as usize % self.files.len();
-                return Some(Command::OpenFile(self.files[self.file_index].clone()));
+                self.selection_index = value as usize % self.elem_len();
+                if self.selection_index == 0 {
+                    unimplemented!()
+                } else {
+                    return Some(Command::OpenFile(
+                        self.files[self.selection_index - 1].clone(),
+                    ));
+                }
             }
             KeyboardInput::Up => {
-                self.file_index = (self.file_index + self.files.len() - 1) % self.files.len();
+                self.selection_index =
+                    (self.selection_index + self.elem_len() - 1) % self.elem_len();
             }
             KeyboardInput::Down => {
-                self.file_index = (self.file_index + 1) % self.files.len();
+                self.selection_index = (self.selection_index + 1) % self.elem_len();
             }
             KeyboardInput::Key(13) => {
-                return Some(Command::OpenFile(self.files[self.file_index].clone()));
+                if self.selection_index == 0 {
+                    unimplemented!()
+                } else {
+                    return Some(Command::OpenFile(
+                        self.files[self.selection_index - 1].clone(),
+                    ));
+                }
             }
             _ => {}
         }
@@ -51,7 +68,8 @@ impl FileSelector {
     pub fn refresh_screen(&self) {
         let files = FileSelector::files(&self.folder);
 
-        self.printer.print(&self.folder, files, self.file_index);
+        self.printer
+            .print(&self.folder, files, self.selection_index);
     }
 
     fn files(folder: &PathBuf) -> Vec<PathBuf> {

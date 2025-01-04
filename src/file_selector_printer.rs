@@ -30,19 +30,17 @@ impl FileSelectorPrinter {
             folder.to_str().expect("Failed stringifying path")
         ));
 
-        for (i, path) in file_paths.iter().enumerate() {
+        let mut elems = file_paths
+            .iter()
+            .map(|e| e.to_str().unwrap())
+            .collect::<Vec<_>>();
+        elems.insert(0, "Create new file");
+
+        for (i, elem) in elems.iter().enumerate() {
             if selected_index == i {
-                buf.push_str(&format!(
-                    "+-- \x1B[104m#{}: {}\x1B[0m",
-                    i,
-                    path.to_str().unwrap()
-                ));
+                buf.push_str(&format!("+-- \x1B[104m#{}: {}\x1B[0m", i, elem));
             } else {
-                buf.push_str(&format!(
-                    "+-- \x1B[34m#{}: {}\x1B[0m",
-                    i,
-                    path.to_str().unwrap()
-                ));
+                buf.push_str(&format!("+-- \x1B[34m#{}: {}\x1B[0m", i, elem));
             }
             buf.push_str("\n\r");
         }
