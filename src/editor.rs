@@ -1,7 +1,7 @@
+use std::path::PathBuf;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::analyzer::{Analyzer, Suggestion};
-use crate::config::Config;
 use crate::editor_printer::EditorPrinter;
 use crate::net_ops::NetOps;
 use crate::parser;
@@ -23,10 +23,15 @@ pub struct Editor {
 }
 
 impl Editor {
-    pub fn new(content: Rc<RefCell<Text>>, net_ops: &NetOps) -> Editor {
+    pub fn new(
+        content: Rc<RefCell<Text>>,
+        net_ops: &NetOps,
+        schema_cache_file_path: &PathBuf,
+        reload_schema: bool,
+    ) -> Editor {
         Editor {
             content,
-            analyzer: Analyzer::new(&net_ops),
+            analyzer: Analyzer::new(&net_ops, schema_cache_file_path, reload_schema),
             state: State::Edit,
             previous_suggestion: None,
             printer: EditorPrinter::new(),

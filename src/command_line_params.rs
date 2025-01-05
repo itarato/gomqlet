@@ -16,6 +16,9 @@ pub struct CommandLineParams {
 
     #[arg(long, value_name = "SOURCE_FOLDER")]
     pub source_folder: Option<String>,
+
+    #[arg(short, long, value_name = "RELOAD_SCHEMA", default_value_t = false)]
+    pub reload_schema: bool,
 }
 
 impl CommandLineParams {

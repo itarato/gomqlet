@@ -49,12 +49,12 @@ impl NetOps {
         request.body(body).send().unwrap()
     }
 
-    pub fn fetch_live_schema(&self) -> Value {
+    pub fn fetch_live_schema(&self) -> String {
         let mut response = self.raw_execute_graphql_operation(INSPECTION_QUERY);
 
         let mut response_body = String::new();
         response.read_to_string(&mut response_body).unwrap();
 
-        serde_json::from_str(&response_body).unwrap()
+        response_body
     }
 }

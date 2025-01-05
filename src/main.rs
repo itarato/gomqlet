@@ -68,7 +68,12 @@ impl Gomqlet {
         let config = command_line_params.config();
         let source_folder = command_line_params.source_folder();
         let net_ops = NetOps::new(&config);
-        let editor = Editor::new(content.clone(), &net_ops);
+        let editor = Editor::new(
+            content.clone(),
+            &net_ops,
+            &PathBuf::from(config.schema_cache),
+            command_line_params.reload_schema,
+        );
 
         Ok(Gomqlet {
             terminal_handler,

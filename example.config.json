@@ -1,0 +1,18 @@
+{
+    "url": "https://<API_PATH>",
+    "headers": [
+        [
+            "Accept",
+            "application/json"
+        ],
+        [
+            "Content-Type",
+            "application/json"
+        ],
+        [
+            "X-Access-Token",
+            "<ACCESS_TOKEN>"
+        ]
+    ],
+    "schema_cache": "<SCHEMA_CACHE_PATH>"
+}

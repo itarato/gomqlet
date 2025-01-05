@@ -1,4 +1,9 @@
-use std::{fmt, fs::File};
+use std::{
+    fmt,
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+};
 
 use serde_json::Value;
 
@@ -335,8 +340,8 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn new(net_ops: &NetOps) -> Schema {
-        let schema: Value = Schema::fetch_schema(&net_ops);
+    pub fn new(net_ops: &NetOps, schema_cache_file_path: &PathBuf, reload_schema: bool) -> Schema {
+        let schema: Value = Schema::fetch_schema(&net_ops, schema_cache_file_path, reload_schema);
 
         let query_root_name = schema.as_object().unwrap()["data"].as_object().unwrap()["__schema"]
             .as_object()
@@ -364,9 +369,27 @@ impl Schema {
         }
     }
 
-    fn fetch_schema(net_ops: &NetOps) -> Value {
-        // serde_json::from_reader(File::open("./misc/shopify.admin.json").unwrap()).unwrap()
-        net_ops.fetch_live_schema()
+    fn fetch_schema(
+        net_ops: &NetOps,
+        schema_cache_file_path: &PathBuf,
+        reload_schema: bool,
+    ) -> Value {
+        if reload_schema
+            || !fs::exists(schema_cache_file_path).expect("Failed checking schema cache file")
+        {
+            let response_body = net_ops.fetch_live_schema();
+
+            let mut cache =
+                File::create(schema_cache_file_path).expect("Failed creating schema cache");
+            cache
+                .write_all(response_body.as_bytes())
+                .expect("Failed saving schema");
+
+            serde_json::from_str(&response_body).unwrap()
+        } else {
+            let cache = File::open(schema_cache_file_path).expect("Failed opening schema cache");
+            serde_json::from_reader(cache).unwrap()
+        }
     }
 
     pub fn type_definition(&self, name: &String) -> Option<&Type> {

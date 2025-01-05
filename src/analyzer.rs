@@ -1,7 +1,8 @@
+use std::path::PathBuf;
+
 use crate::{
     ast::{self},
-    config::Config,
-    net_ops::{self, NetOps},
+    net_ops::NetOps,
     schema::{self, Type},
     tokenizer::Token,
 };
@@ -25,9 +26,13 @@ pub struct Analyzer {
 }
 
 impl Analyzer {
-    pub fn new(net_ops: &NetOps) -> Analyzer {
+    pub fn new(
+        net_ops: &NetOps,
+        schema_cache_file_path: &PathBuf,
+        reload_schema: bool,
+    ) -> Analyzer {
         Analyzer {
-            schema: schema::Schema::new(&net_ops),
+            schema: schema::Schema::new(&net_ops, schema_cache_file_path, reload_schema),
         }
     }
 
