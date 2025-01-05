@@ -13,30 +13,10 @@ pub struct Query {
     pub field_list: FieldList,
 }
 
-impl Query {
-    pub fn range_exclusive(&self) -> Range<usize> {
-        self.start_pos..self.end_pos
-    }
-
-    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
-        self.start_pos..=self.end_pos
-    }
-}
-
 pub struct Mutation {
     pub start_pos: usize,
     pub end_pos: usize,
     pub field_list: FieldList,
-}
-
-impl Mutation {
-    pub fn range_exclusive(&self) -> Range<usize> {
-        self.start_pos..self.end_pos
-    }
-
-    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
-        self.start_pos..=self.end_pos
-    }
 }
 
 pub struct FieldList {
