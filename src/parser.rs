@@ -1,4 +1,4 @@
-use crate::ast::{self, FieldList};
+use crate::ast::{self, FieldList, ParamValue};
 use crate::tokenizer::{Token, TokenKind};
 
 #[derive(Debug)]
@@ -143,11 +143,18 @@ impl Parser {
             };
             self.ptr += 1;
 
-            if self.is_next_token_kind(&TokenKind::Colon) {
+            let value = if self.is_next_token_kind(&TokenKind::Colon) {
                 self.ptr += 1;
-            } // Else is omitted due to error handling (assume it's missing for now).
-
-            let value = self.parse_arglist_value(close_token_kind)?;
+                self.parse_arglist_value(close_token_kind)?
+            } else {
+                // Else is omitted due to error handling (assume it's missing for now).
+                ParamValue::Missing((
+                    key.end_pos(),
+                    self.peek_token()
+                        .map(|token| token.pos)
+                        .unwrap_or(key.end_pos()),
+                ))
+            };
 
             params.push(ast::ParamKeyValuePair {
                 start_pos: key.pos,
@@ -160,6 +167,10 @@ impl Parser {
                 self.ptr += 1;
                 continue;
             } else {
+                // Error handling: assume user is typing a new key to a non-end location.
+                if self.is_next_token_keyword() {
+                    continue;
+                }
                 break;
             }
         }
@@ -344,6 +355,18 @@ impl Parser {
         }
 
         false
+    }
+
+    fn is_next_token_keyword(&self) -> bool {
+        if let Some(Token {
+            kind: TokenKind::Keyword(_),
+            ..
+        }) = self.peek_token()
+        {
+            true
+        } else {
+            false
+        }
     }
 
     fn peek_keyword(&self) -> Option<&String> {
