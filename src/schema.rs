@@ -201,9 +201,15 @@ pub struct InputObjectType {
     pub args: ArgList,
 }
 
+pub struct EnumType {
+    name: String,
+    elems: Vec<String>,
+}
+
 pub enum Type {
     Object(ObjectType),
     InputObject(InputObjectType),
+    Enum(EnumType),
 }
 
 impl Type {
@@ -233,6 +239,21 @@ impl Type {
                 let args = ArgList { elems: args_elems };
 
                 Some(Type::InputObject(InputObjectType { name, args }))
+            }
+            "ENUM" => {
+                let elems = object["enumValues"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|value| {
+                        value.as_object().unwrap()["name"]
+                            .as_str()
+                            .unwrap()
+                            .to_string()
+                    })
+                    .collect();
+
+                Some(Type::Enum(EnumType { name, elems }))
             }
             _ => None,
         }
@@ -269,6 +290,20 @@ impl Type {
                     }
                 })
                 .collect(),
+            Type::Enum(enum_type) => enum_type
+                .elems
+                .iter()
+                .filter_map(|enum_value| {
+                    if enum_value.starts_with(&prefix) {
+                        Some(SuggestionElem {
+                            name: enum_value.clone(),
+                            kind: "Enum".to_string(),
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
         }
     }
 
@@ -283,6 +318,7 @@ impl Type {
                 None
             }
             Type::InputObject(_) => None,
+            Type::Enum(_) => None,
         }
     }
 }
@@ -324,16 +360,21 @@ impl Schema {
         }
     }
 
-    pub fn type_definition(&self, name: String) -> Option<&Type> {
+    pub fn type_definition(&self, name: &String) -> Option<&Type> {
         for ty in &self.types {
             match ty {
                 Type::Object(object_type) => {
-                    if object_type.name == name {
+                    if &object_type.name == name {
                         return Some(ty);
                     }
                 }
                 Type::InputObject(input_object) => {
-                    if input_object.name == name {
+                    if &input_object.name == name {
+                        return Some(ty);
+                    }
+                }
+                Type::Enum(enum_type) => {
+                    if &enum_type.name == name {
                         return Some(ty);
                     }
                 }
@@ -367,7 +408,7 @@ impl Schema {
                     .ok_or(format!("Field type of {} not found", field_name))
             })
             .and_then(|field_type_name| {
-                self.type_definition(field_type_name.clone()).ok_or(format!(
+                self.type_definition(&field_type_name).ok_or(format!(
                     "Definition of type {} of field {} not found",
                     field_type_name, field_name
                 ))

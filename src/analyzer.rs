@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use crate::{
     ast::{self},
     schema::{self, Type},
@@ -43,7 +45,7 @@ impl Analyzer {
     fn find_pos_in_query(&self, query: &ast::Query, pos: usize) -> AnalyzerResult {
         let query_scope = self
             .schema
-            .type_definition(self.schema.query_root_name.clone())
+            .type_definition(&self.schema.query_root_name)
             .ok_or("Query is not found in the schema".to_string())?;
 
         if !query.field_list.range_exclusive().contains(&pos) {
@@ -56,7 +58,7 @@ impl Analyzer {
     fn find_pos_in_mutation(&self, mutation: &ast::Mutation, pos: usize) -> AnalyzerResult {
         let mutation_scope = self
             .schema
-            .type_definition(self.schema.mutation_root_name.clone())
+            .type_definition(&self.schema.mutation_root_name)
             .ok_or("Mutation is not found in the schema".to_string())?;
 
         if !mutation.field_list.range_exclusive().contains(&pos) {
@@ -209,7 +211,7 @@ impl Analyzer {
                 // Get the schema type definition of the arg value's type.
                 let value_type = self
                     .schema
-                    .type_definition(value_type_name.clone())
+                    .type_definition(value_type_name)
                     .ok_or(format!("Type {} not found.", &value_type_name))?;
 
                 // Get the inner args of that type.
@@ -247,9 +249,21 @@ impl Analyzer {
                 }
                 // TODO!!!
             }
-            crate::ast::ParamValue::Missing(pos) => {
-                // TODO!!!
-            }
+            crate::ast::ParamValue::Missing(_pos) => match &scope {
+                schema::TypeClass::Enum(enum_type_name) => {
+                    return self
+                        .schema
+                        .type_definition(enum_type_name)
+                        .ok_or(format!("Enum type {} not found", enum_type_name))
+                        .and_then(|enum_type| {
+                            Ok(Some(Suggestion {
+                                elems: enum_type.field_names(String::new()),
+                                token: None,
+                            }))
+                        })
+                }
+                _ => {}
+            },
         }
 
         Ok(None)

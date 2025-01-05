@@ -213,7 +213,11 @@ impl Parser {
             // Error handling:
             Some(Token { ref kind, pos, .. }) => {
                 if kind == close_token_kind || kind == &TokenKind::Comma {
-                    Ok(ast::ParamValue::Missing(pos))
+                    let start_pos = self
+                        .peek_previous_token()
+                        .map(|token| token.end_pos())
+                        .unwrap_or(0);
+                    Ok(ast::ParamValue::Missing((start_pos, pos)))
                 } else {
                     Err(self.parse_error(
                         ParseErrorScope::ArgListValue,
@@ -313,6 +317,14 @@ impl Parser {
             kind == expected
         } else {
             false
+        }
+    }
+
+    fn peek_previous_token(&self) -> Option<&Token> {
+        if self.ptr == 0 {
+            None
+        } else {
+            self.tokens.get(self.ptr - 1)
         }
     }
 

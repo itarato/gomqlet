@@ -114,15 +114,15 @@ pub enum ParamValue {
     List(ListParamValue),
     Object(ArgList),
     // For error correction reasons a placeholder type.
-    Missing(usize), // pos (representing start and end).
-                    // TODO: object, list
+    Missing((usize, usize)), // (start_pos, end_pos)
+                             // TODO: object, list
 }
 
 impl ParamValue {
     pub fn start_pos(&self) -> usize {
         match self {
             ParamValue::Simple(token) => token.pos,
-            ParamValue::Missing(pos) => *pos,
+            ParamValue::Missing((start_pos, _)) => *start_pos,
             ParamValue::List(list) => list.start_pos,
             ParamValue::Object(object) => object.start_pos,
         }
@@ -131,7 +131,7 @@ impl ParamValue {
     pub fn end_pos(&self) -> usize {
         match self {
             ParamValue::Simple(token) => token.end_pos(),
-            ParamValue::Missing(pos) => *pos,
+            ParamValue::Missing((_, end_pos)) => *end_pos,
             ParamValue::List(list) => list.end_pos,
             ParamValue::Object(object) => object.end_pos,
         }
