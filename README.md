@@ -32,8 +32,7 @@ Bug:
 
 Editor:
 
-- save to file
-- paging/scrolling
+- try showing suggestions on the cursor position
 
 Tokenizier:
 
@@ -48,16 +47,16 @@ Analysis:
 - autocomplete with fuzzy search
 - only offer not yet added fields
 - arglist value completion
-- show numbers on suggestions after CTRL-O
 - validation:
     - arg requirement
     - fieldset
     - fieldset emptiness
 - load schema realtime
+- enum suggestion
 
 File browser:
 
-- create new file
+- 
 
 GraphQL:
 
