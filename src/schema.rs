@@ -259,13 +259,13 @@ impl Type {
         }
     }
 
-    pub fn field_names(&self, prefix: String) -> Vec<SuggestionElem> {
+    pub fn field_names(&self, prefix: &str) -> Vec<SuggestionElem> {
         match self {
             Type::Object(object_type) => object_type
                 .fields
                 .iter()
                 .filter_map(|field| {
-                    if field.name.starts_with(&prefix) {
+                    if field.name.starts_with(prefix) {
                         Some(SuggestionElem {
                             name: field.name.clone(),
                             kind: format!("{}", field.field_type),
@@ -280,7 +280,7 @@ impl Type {
                 .elems
                 .iter()
                 .filter_map(|arg| {
-                    if arg.name.starts_with(&prefix) {
+                    if arg.name.starts_with(prefix) {
                         Some(SuggestionElem {
                             name: arg.name.clone(),
                             kind: format!("{}", arg.arg_type),
@@ -294,7 +294,7 @@ impl Type {
                 .elems
                 .iter()
                 .filter_map(|enum_value| {
-                    if enum_value.starts_with(&prefix) {
+                    if enum_value.starts_with(prefix) {
                         Some(SuggestionElem {
                             name: enum_value.clone(),
                             kind: "Enum".to_string(),

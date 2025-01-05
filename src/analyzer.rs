@@ -91,7 +91,7 @@ impl Analyzer {
             if field.name.range_inclusive().contains(&pos) {
                 // On the field name.
                 return Ok(Some(Suggestion {
-                    elems: scope.field_names(field.name.original.clone()),
+                    elems: scope.field_names(&field.name.original),
                     token: Some(field.name.clone()),
                 }));
             }
@@ -124,7 +124,7 @@ impl Analyzer {
 
         // In query but not on fields. -> AC can offer fields.
         Ok(Some(Suggestion {
-            elems: scope.field_names(String::new()),
+            elems: scope.field_names(""),
             token: None,
         }))
     }
@@ -194,9 +194,21 @@ impl Analyzer {
         pos: usize,
     ) -> AnalyzerResult {
         match &value {
-            crate::ast::ParamValue::Simple(token) => {
-                // TODO!!!
-            }
+            crate::ast::ParamValue::Simple(token) => match scope {
+                schema::TypeClass::Enum(enum_type_name) => {
+                    return self
+                        .schema
+                        .type_definition(enum_type_name)
+                        .ok_or(format!("Enum type {} not found", enum_type_name))
+                        .and_then(|enum_type| {
+                            Ok(Some(Suggestion {
+                                elems: enum_type.field_names(&token.original),
+                                token: None,
+                            }))
+                        })
+                }
+                _ => {}
+            },
             crate::ast::ParamValue::Object(object_arglist) => {
                 // Get the type name of current arg value.
                 let value_type_name = match scope.skip_non_null() {
@@ -247,7 +259,6 @@ impl Analyzer {
                         return self.find_pos_in_arglist_value(list_param_value, inner_scope, pos);
                     }
                 }
-                // TODO!!!
             }
             crate::ast::ParamValue::Missing(_pos) => match &scope {
                 schema::TypeClass::Enum(enum_type_name) => {
@@ -257,7 +268,7 @@ impl Analyzer {
                         .ok_or(format!("Enum type {} not found", enum_type_name))
                         .and_then(|enum_type| {
                             Ok(Some(Suggestion {
-                                elems: enum_type.field_names(String::new()),
+                                elems: enum_type.field_names(""),
                                 token: None,
                             }))
                         })
