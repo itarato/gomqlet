@@ -18,24 +18,26 @@ impl NetOps {
         }
     }
 
-    pub fn execute_graphql_operation(&self, body: String) {
+    pub fn execute_graphql_operation(&self, query: String) {
         let mut request = self.client.post(self.url.clone());
 
         for [key, value] in &self.headers {
             request = request.header(key, value);
         }
 
-        let body = body.replace('"', "\\\"");
+        let query = query.replace('"', "\\\"");
+        let body = format!("{{ \"query\": \"{}\" }}", query);
 
-        let mut response = request
-            .body(format!("{{ \"query\": \"{}\" }}", body))
-            .send()
-            .unwrap();
+        debug!("Body: {}", &body);
+        debug!("Headers: {:?}", self.headers);
+        debug!("URL: {}", self.url);
 
-        let mut body = String::new();
-        response.read_to_string(&mut body).unwrap();
+        let mut response = request.body(body).send().unwrap();
 
-        let json: Value = serde_json::from_str(&body).unwrap();
+        let mut response_body = String::new();
+        response.read_to_string(&mut response_body).unwrap();
+
+        let json: Value = serde_json::from_str(&response_body).unwrap();
 
         info!("{:#?}", json);
     }

@@ -56,6 +56,10 @@ impl Text {
         self.lines.join("\n")
     }
 
+    pub fn to_string_no_new_lines(&self) -> String {
+        self.lines.join("")
+    }
+
     pub fn save_to_file(&mut self) {
         let mut file = File::create(self.file_path.as_ref().expect("Missing file"))
             .expect("Failed opening file to save.");

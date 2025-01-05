@@ -126,7 +126,7 @@ impl Gomqlet {
                 } else if cmd == KeyboardInput::Key(7) {
                     // CTRL-G
                     self.net_ops
-                        .execute_graphql_operation(self.content.borrow().to_string());
+                        .execute_graphql_operation(self.content.borrow().to_string_no_new_lines());
                 } else if cmd == KeyboardInput::AltF || cmd == KeyboardInput::CtrlF {
                     self.state = State::FileSelector;
                     self.file_selector.refresh_screen();
