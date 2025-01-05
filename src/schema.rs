@@ -208,6 +208,7 @@ pub struct EnumType {
 
 pub enum Type {
     Object(ObjectType),
+    Interface(ObjectType),
     InputObject(InputObjectType),
     Enum(EnumType),
 }
@@ -219,7 +220,7 @@ impl Type {
         let kind = object["kind"].as_str().unwrap();
 
         match kind {
-            "OBJECT" => {
+            "OBJECT" | "INTERFACE" => {
                 let fields = object["fields"]
                     .as_array()
                     .unwrap()
@@ -227,7 +228,11 @@ impl Type {
                     .map(|field_def| Field::from_json_value(field_def))
                     .collect();
 
-                Some(Type::Object(ObjectType { name, fields }))
+                if kind == "OBJECT" {
+                    Some(Type::Object(ObjectType { name, fields }))
+                } else {
+                    Some(Type::Interface(ObjectType { name, fields }))
+                }
             }
             "INPUT_OBJECT" => {
                 let args_elems = object["inputFields"]
@@ -261,7 +266,7 @@ impl Type {
 
     pub fn field_names(&self, prefix: &str) -> Vec<SuggestionElem> {
         match self {
-            Type::Object(object_type) => object_type
+            Type::Object(object_type) | Type::Interface(object_type) => object_type
                 .fields
                 .iter()
                 .filter_map(|field| {
@@ -309,7 +314,7 @@ impl Type {
 
     pub fn field(&self, name: String) -> Option<&Field> {
         match self {
-            Type::Object(object_type) => {
+            Type::Object(object_type) | Type::Interface(object_type) => {
                 for field in &object_type.fields {
                     if field.name == name {
                         return Some(field);
@@ -363,7 +368,7 @@ impl Schema {
     pub fn type_definition(&self, name: &String) -> Option<&Type> {
         for ty in &self.types {
             match ty {
-                Type::Object(object_type) => {
+                Type::Object(object_type) | Type::Interface(object_type) => {
                     if &object_type.name == name {
                         return Some(ty);
                     }
