@@ -203,7 +203,7 @@ impl Analyzer {
                         .and_then(|enum_type| {
                             Ok(Some(Suggestion {
                                 elems: enum_type.field_names(&token.original),
-                                token: None,
+                                token: Some(token.clone()),
                             }))
                         })
                 }
