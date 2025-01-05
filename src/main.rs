@@ -1,13 +1,12 @@
 use std::{
     cell::RefCell,
-    fs::{self, File},
-    io::{self, Read},
-    path::{Path, PathBuf},
+    io::{self},
+    path::PathBuf,
     rc::Rc,
 };
 
 use clap::Parser;
-use config::Config;
+use command_line_params::CommandLineParams;
 use editor::Editor;
 use file_selector::FileSelector;
 use net_ops::NetOps;
@@ -22,6 +21,7 @@ extern crate log;
 
 mod analyzer;
 mod ast;
+mod command_line_params;
 mod config;
 mod editor;
 mod editor_printer;
@@ -35,41 +35,6 @@ mod terminal_handler;
 mod text;
 mod tokenizer;
 mod util;
-
-#[derive(clap::Parser)]
-#[command(version, about, long_about = None)]
-struct CommandLineParams {
-    #[arg(short, long, value_name = "CONFIG_FILE")]
-    config_file: String,
-
-    #[arg(long, value_name = "SOURCE_FILE")]
-    source_file: Option<String>,
-
-    #[arg(long, value_name = "SOURCE_FOLDER")]
-    source_folder: Option<String>,
-}
-
-impl CommandLineParams {
-    fn config(&self) -> Config {
-        let file = File::open(&self.config_file).expect("Cannot load config file");
-        serde_json::from_reader(file).unwrap()
-    }
-
-    fn source_folder(&self) -> PathBuf {
-        if let Some(ref source_folder) = self.source_folder {
-            PathBuf::from(source_folder)
-        } else if let Some(ref source_file) = self.source_file {
-            let mut path = fs::canonicalize(PathBuf::from(source_file))
-                .expect("Failed to get path of source file");
-            path.pop();
-
-            path
-        } else {
-            fs::canonicalize(PathBuf::from("./"))
-                .expect("Failed to get absolute path for current dir")
-        }
-    }
-}
 
 #[derive(PartialEq)]
 enum State {
@@ -102,13 +67,15 @@ impl Gomqlet {
         )));
         let config = command_line_params.config();
         let source_folder = command_line_params.source_folder();
+        let net_ops = NetOps::new(&config);
+        let editor = Editor::new(content.clone(), &net_ops);
 
         Ok(Gomqlet {
             terminal_handler,
-            editor: Editor::new(content.clone()),
+            editor,
             file_selector: FileSelector::new(source_folder),
             content,
-            net_ops: NetOps::new(&config),
+            net_ops,
             state,
         })
     }
@@ -126,7 +93,7 @@ impl Gomqlet {
                 } else if cmd == KeyboardInput::Key(7) {
                     // CTRL-G
                     self.net_ops
-                        .execute_graphql_operation(self.content.borrow().to_string_no_new_lines());
+                        .execute_graphql_operation(&self.content.borrow().to_string_no_new_lines());
                 } else if cmd == KeyboardInput::AltF || cmd == KeyboardInput::CtrlF {
                     self.state = State::FileSelector;
                     self.file_selector.refresh_screen();

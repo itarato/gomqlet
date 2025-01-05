@@ -1,7 +1,7 @@
-use std::fmt::format;
-
 use crate::{
     ast::{self},
+    config::Config,
+    net_ops::{self, NetOps},
     schema::{self, Type},
     tokenizer::Token,
 };
@@ -25,9 +25,9 @@ pub struct Analyzer {
 }
 
 impl Analyzer {
-    pub fn new() -> Analyzer {
+    pub fn new(net_ops: &NetOps) -> Analyzer {
         Analyzer {
-            schema: schema::Schema::new(),
+            schema: schema::Schema::new(&net_ops),
         }
     }
 

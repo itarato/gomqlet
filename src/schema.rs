@@ -2,7 +2,7 @@ use std::{fmt, fs::File};
 
 use serde_json::Value;
 
-use crate::analyzer::SuggestionElem;
+use crate::{analyzer::SuggestionElem, config::Config, net_ops::NetOps};
 
 #[derive(Debug)]
 pub enum TypeClass {
@@ -335,9 +335,8 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn new() -> Schema {
-        let schema: Value =
-            serde_json::from_reader(File::open("./misc/shopify.admin.json").unwrap()).unwrap();
+    pub fn new(net_ops: &NetOps) -> Schema {
+        let schema: Value = Schema::fetch_schema(&net_ops);
 
         let query_root_name = schema.as_object().unwrap()["data"].as_object().unwrap()["__schema"]
             .as_object()
@@ -363,6 +362,11 @@ impl Schema {
             query_root_name,
             mutation_root_name,
         }
+    }
+
+    fn fetch_schema(net_ops: &NetOps) -> Value {
+        // serde_json::from_reader(File::open("./misc/shopify.admin.json").unwrap()).unwrap()
+        net_ops.fetch_live_schema()
     }
 
     pub fn type_definition(&self, name: &String) -> Option<&Type> {

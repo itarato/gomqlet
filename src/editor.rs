@@ -1,8 +1,9 @@
-use std::path::PathBuf;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::analyzer::{Analyzer, Suggestion};
+use crate::config::Config;
 use crate::editor_printer::EditorPrinter;
+use crate::net_ops::NetOps;
 use crate::parser;
 use crate::tokenizer::{Token, TokenKind, Tokenizer};
 use crate::{stdin_reader::KeyboardInput, text::Text};
@@ -22,10 +23,10 @@ pub struct Editor {
 }
 
 impl Editor {
-    pub fn new(content: Rc<RefCell<Text>>) -> Editor {
+    pub fn new(content: Rc<RefCell<Text>>, net_ops: &NetOps) -> Editor {
         Editor {
             content,
-            analyzer: Analyzer::new(),
+            analyzer: Analyzer::new(&net_ops),
             state: State::Edit,
             previous_suggestion: None,
             printer: EditorPrinter::new(),
