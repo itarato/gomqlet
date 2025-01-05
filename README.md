@@ -46,13 +46,11 @@ Analysis:
 
 - autocomplete with fuzzy search
 - only offer not yet added fields
-- arglist value completion
 - validation:
     - arg requirement
     - fieldset
     - fieldset emptiness
 - load schema realtime
-- enum suggestion
 
 File browser:
 
