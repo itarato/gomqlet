@@ -1,4 +1,4 @@
 /target
-misc/shopify.json
+misc/*.json
 *.config.json
 *.graphql

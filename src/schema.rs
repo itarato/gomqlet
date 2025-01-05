@@ -296,7 +296,7 @@ pub struct Schema {
 impl Schema {
     pub fn new() -> Schema {
         let schema: Value =
-            serde_json::from_reader(File::open("./misc/shopify.json").unwrap()).unwrap();
+            serde_json::from_reader(File::open("./misc/shopify.admin.json").unwrap()).unwrap();
 
         let query_root_name = schema.as_object().unwrap()["data"].as_object().unwrap()["__schema"]
             .as_object()
