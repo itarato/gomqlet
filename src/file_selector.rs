@@ -100,6 +100,8 @@ impl FileSelector {
 
                     File::create(&new_file_path).expect("Failed creating new file");
 
+                    self.state_selection();
+
                     return Some(Command::OpenFile(new_file_path));
                 } else if ch == 127 {
                     self.new_file_name.as_mut().unwrap().pop();

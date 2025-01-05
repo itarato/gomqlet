@@ -50,7 +50,6 @@ Analysis:
     - arg requirement
     - fieldset
     - fieldset emptiness
-- load schema realtime
 
 File browser:
 

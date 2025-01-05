@@ -7,7 +7,7 @@ use std::{
 
 use serde_json::Value;
 
-use crate::{analyzer::SuggestionElem, config::Config, net_ops::NetOps};
+use crate::{analyzer::SuggestionElem, net_ops::NetOps};
 
 #[derive(Debug)]
 pub enum TypeClass {
