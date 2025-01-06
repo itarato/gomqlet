@@ -1,6 +1,8 @@
 # Gomqlet
 
-Toy graphql autocomplete project.
+Toy graphql executor project.
+
+![Screenshot](./misc/screenshot.png)
 
 Features:
 
@@ -10,6 +12,7 @@ Features:
 - autocompletion
 - (basic) error detection
 - query / mutation exection (over HTTP)
+- file browser
 
 ## Use
 
