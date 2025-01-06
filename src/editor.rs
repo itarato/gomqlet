@@ -70,6 +70,7 @@ impl Editor {
                     .borrow_mut()
                     .apply_suggestion(self.previous_suggestion.clone().unwrap(), digit as usize);
             }
+            KeyboardInput::CtrlW => self.content.borrow_mut().delete_word(),
             _ => {
                 debug!("Unrecognized editor input: {:?}", input);
             }

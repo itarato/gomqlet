@@ -6,19 +6,24 @@ use std::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyboardInput {
     Key(u8),
+
     CtrlC,
     CtrlD,
+    CtrlF,
+    CtrlW,
+
+    AltDigit(u8),
+    AltF,
+    AltS,
+
     Left,
     Right,
     Up,
     Down,
+
     Home,
     End,
     Delete,
-    AltDigit(u8),
-    AltF,
-    AltS,
-    CtrlF,
 }
 
 pub struct StdinReader;
@@ -91,6 +96,9 @@ impl StdinReader {
                 i += 1;
             } else if buf[i] == 6 {
                 out.push(KeyboardInput::CtrlF);
+                i += 1;
+            } else if buf[i] == 23 {
+                out.push(KeyboardInput::CtrlW);
                 i += 1;
             } else {
                 out.push(KeyboardInput::Key(buf[i]));

@@ -8,6 +8,12 @@ use crate::{analyzer::Suggestion, util::CoordUsize};
 
 const TAB_SIZE: usize = 2;
 
+enum WordDeleteMode {
+    Whitespace,
+    Alphanumberic,
+    Other,
+}
+
 pub struct Text {
     pub lines: Vec<String>,
     pub cursor: CoordUsize,
@@ -144,6 +150,40 @@ impl Text {
             } else {
                 // Noop.
             }
+        }
+    }
+
+    pub fn delete_word(&mut self) {
+        let mut i = self.cursor.x as i32 - 1;
+        if i < 0 {
+            return;
+        }
+
+        let chars = self.lines[self.cursor.y].chars().collect::<Vec<_>>();
+        let delete_mode = if chars[i as usize].is_ascii_alphanumeric() {
+            WordDeleteMode::Alphanumberic
+        } else if chars[i as usize].is_ascii_whitespace() {
+            WordDeleteMode::Whitespace
+        } else {
+            WordDeleteMode::Other
+        };
+
+        while i >= 0 {
+            let ch = chars[i as usize];
+
+            let should_stop = match delete_mode {
+                WordDeleteMode::Alphanumberic => !ch.is_ascii_alphanumeric(),
+
+                WordDeleteMode::Whitespace => !ch.is_ascii_whitespace(),
+                WordDeleteMode::Other => ch.is_alphanumeric() || ch.is_whitespace(),
+            };
+            if should_stop {
+                break;
+            }
+
+            self.lines[self.cursor.y].remove(i as usize);
+            i -= 1;
+            self.cursor.x -= 1;
         }
     }
 
