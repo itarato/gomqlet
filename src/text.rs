@@ -87,6 +87,11 @@ impl Text {
     }
 
     pub fn insert_visible_char(&mut self, ch: char) {
+        if (ch as u8) < 32 || (ch as u8) > 126 {
+            debug!("Command character received: {}", ch as u8);
+            return;
+        }
+
         self.lines
             .get_mut(self.cursor.y)
             .expect("Missing line")

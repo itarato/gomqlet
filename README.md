@@ -24,8 +24,9 @@ Bindings:
 
 - `CTRL-O` and then `DIGIT` / `ALT-<DIGIT>`: apply suggestion
 - `CTRL-G`: execute query
-- `CTRL-C`: quit application
+- `CTRL-C` / `CTRL-D`: quit application
 - `ALT-F` / `CTRL-F`: file browser
+- `ALT-S`: save file
 
 ## Todo
 
@@ -36,6 +37,7 @@ Bug:
 Editor:
 
 - try showing suggestions on the cursor position
+- add CTRL-W
 
 Tokenizier:
 
