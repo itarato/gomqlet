@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 use crate::{
-    analyzer::Suggestion,
+    analyzer::{Suggestion, SuggestionElem},
     parser::ParseError,
     terminal_handler::TerminalHandler,
     tokenizer::{Token, TokenKind},
@@ -110,12 +110,15 @@ impl EditorPrinter {
                 i,
             );
 
-            let mut line_elems = vec![
-                ("|".to_string(), Some(92)),
-                (suggestions.elems[i].name.clone(), Some(32)),
-                (String::from(" "), None),
-                (suggestions.elems[i].kind.clone(), Some(90)),
-            ];
+            let mut line_elems = vec![("|".to_string(), Some(92))];
+
+            EditorPrinter::add_suggestion_fuzzy_bits_to_line_list(
+                &mut line_elems,
+                &suggestions.elems[i],
+            );
+
+            line_elems.push((String::from(" "), None));
+            line_elems.push((suggestions.elems[i].kind.clone(), Some(90)));
 
             if i <= 9 {
                 let number_color = if suggestion_selection_mode { 93 } else { 90 };
@@ -127,6 +130,24 @@ impl EditorPrinter {
                 trim_coloured_string_list(line_elems, popup_width),
                 width = popup_width
             ));
+        }
+    }
+
+    fn add_suggestion_fuzzy_bits_to_line_list(
+        line_elems: &mut Vec<(String, Option<usize>)>,
+        suggestion: &SuggestionElem,
+    ) {
+        let mut printed_pos = 0usize;
+        for fuzzy_pos in &suggestion.fuzzy_match_positions {
+            if *fuzzy_pos > 0 && *fuzzy_pos > printed_pos {
+                line_elems.push((suggestion.name[printed_pos..*fuzzy_pos].into(), Some(32)));
+            }
+            line_elems.push((suggestion.name[*fuzzy_pos..=*fuzzy_pos].into(), Some(97)));
+            printed_pos = *fuzzy_pos + 1;
+        }
+
+        if printed_pos < suggestion.name.len() {
+            line_elems.push((suggestion.name[printed_pos..].into(), Some(32)));
         }
     }
 

@@ -137,10 +137,11 @@ impl ArgList {
         self.elems
             .iter()
             .filter_map(|arg| {
-                if fuzzy_match(&arg.name, prefix).is_some() {
+                if let Some(fuzzy_match_positions) = fuzzy_match(&arg.name, prefix) {
                     Some(SuggestionElem {
                         name: arg.name.clone(),
                         kind: format!("{}", arg.arg_type),
+                        fuzzy_match_positions,
                     })
                 } else {
                     None
@@ -275,10 +276,11 @@ impl Type {
                 .fields
                 .iter()
                 .filter_map(|field| {
-                    if fuzzy_match(&field.name, prefix).is_some() {
+                    if let Some(fuzzy_match_positions) = fuzzy_match(&field.name, prefix) {
                         Some(SuggestionElem {
                             name: field.name.clone(),
                             kind: format!("{}", field.field_type),
+                            fuzzy_match_positions,
                         })
                     } else {
                         None
@@ -290,10 +292,11 @@ impl Type {
                 .elems
                 .iter()
                 .filter_map(|arg| {
-                    if fuzzy_match(&arg.name, prefix).is_some() {
+                    if let Some(fuzzy_match_positions) = fuzzy_match(&arg.name, prefix) {
                         Some(SuggestionElem {
                             name: arg.name.clone(),
                             kind: format!("{}", arg.arg_type),
+                            fuzzy_match_positions,
                         })
                     } else {
                         None
@@ -304,10 +307,11 @@ impl Type {
                 .elems
                 .iter()
                 .filter_map(|enum_value| {
-                    if fuzzy_match(&enum_value, prefix).is_some() {
+                    if let Some(fuzzy_match_positions) = fuzzy_match(&enum_value, prefix) {
                         Some(SuggestionElem {
                             name: enum_value.clone(),
                             kind: "Enum".to_string(),
+                            fuzzy_match_positions,
                         })
                     } else {
                         None

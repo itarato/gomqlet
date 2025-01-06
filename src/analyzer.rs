@@ -11,6 +11,7 @@ use crate::{
 pub struct SuggestionElem {
     pub name: String,
     pub kind: String,
+    pub fuzzy_match_positions: Vec<usize>,
 }
 
 #[derive(Debug, Clone)]
