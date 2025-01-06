@@ -47,7 +47,6 @@ Parsing:
 
 Analysis:
 
-- autocomplete with fuzzy search
 - only offer not yet added fields
 - validation:
     - arg requirement
