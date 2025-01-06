@@ -7,7 +7,7 @@ use std::{
 
 use serde_json::Value;
 
-use crate::{analyzer::SuggestionElem, net_ops::NetOps};
+use crate::{analyzer::SuggestionElem, net_ops::NetOps, util::fuzzy_match};
 
 #[derive(Debug)]
 pub enum TypeClass {
@@ -137,7 +137,7 @@ impl ArgList {
         self.elems
             .iter()
             .filter_map(|arg| {
-                if arg.name.starts_with(prefix) {
+                if fuzzy_match(&arg.name, prefix).is_some() {
                     Some(SuggestionElem {
                         name: arg.name.clone(),
                         kind: format!("{}", arg.arg_type),
@@ -275,7 +275,7 @@ impl Type {
                 .fields
                 .iter()
                 .filter_map(|field| {
-                    if field.name.starts_with(prefix) {
+                    if fuzzy_match(&field.name, prefix).is_some() {
                         Some(SuggestionElem {
                             name: field.name.clone(),
                             kind: format!("{}", field.field_type),
@@ -290,7 +290,7 @@ impl Type {
                 .elems
                 .iter()
                 .filter_map(|arg| {
-                    if arg.name.starts_with(prefix) {
+                    if fuzzy_match(&arg.name, prefix).is_some() {
                         Some(SuggestionElem {
                             name: arg.name.clone(),
                             kind: format!("{}", arg.arg_type),
@@ -304,7 +304,7 @@ impl Type {
                 .elems
                 .iter()
                 .filter_map(|enum_value| {
-                    if enum_value.starts_with(prefix) {
+                    if fuzzy_match(&enum_value, prefix).is_some() {
                         Some(SuggestionElem {
                             name: enum_value.clone(),
                             kind: "Enum".to_string(),

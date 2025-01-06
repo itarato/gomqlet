@@ -25,3 +25,26 @@ pub fn trim_coloured_string_list(elems: Vec<(String, Option<usize>)>, max_len: u
 
     out_elems.join("")
 }
+
+pub fn fuzzy_match(subject: &str, pattern: &str) -> Option<Vec<usize>> {
+    let pattern_chars = pattern.chars().collect::<Vec<_>>();
+    if pattern.is_empty() {
+        return Some(vec![]);
+    }
+
+    let mut match_points = vec![];
+    let mut pattern_i = 0usize;
+
+    for (i, subject_ch) in subject.chars().enumerate() {
+        if subject_ch == pattern_chars[pattern_i] {
+            match_points.push(i);
+            pattern_i += 1;
+        }
+
+        if pattern_i == pattern.len() {
+            return Some(match_points);
+        }
+    }
+
+    None
+}

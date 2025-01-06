@@ -50,6 +50,7 @@ Analysis:
     - arg requirement
     - fieldset
     - fieldset emptiness
+- limit suggestion to screen size
 
 File browser:
 
