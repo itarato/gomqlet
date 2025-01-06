@@ -110,6 +110,11 @@ impl EditorPrinter {
                 i,
             );
 
+            if i == self.terminal_height() - 1 {
+                buf.push_str(&format!("... {} more", suggestions.elems.len() - i));
+                break;
+            }
+
             let mut line_elems = vec![("|".to_string(), Some(92))];
 
             EditorPrinter::add_suggestion_fuzzy_bits_to_line_list(

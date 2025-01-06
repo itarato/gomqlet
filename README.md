@@ -37,11 +37,10 @@ Bug:
 Editor:
 
 - try showing suggestions on the cursor position
-- add CTRL-W
 
 Tokenizier:
 
--
+- floats
 
 Parsing:
 
@@ -54,7 +53,6 @@ Analysis:
     - arg requirement
     - fieldset
     - fieldset emptiness
-- limit suggestion to screen size
 
 File browser:
 
