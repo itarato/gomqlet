@@ -38,7 +38,7 @@ pub enum TokenKind {
     CloseBracket, // ]
     Colon,
     Comma,
-    IntNumber(String),
+    Number(String),
     Keyword(String),
     Str(String),
     Whitespace(String),
@@ -53,7 +53,7 @@ impl TokenKind {
             TokenKind::CloseParen | TokenKind::OpenParen => 96,
             TokenKind::Colon | TokenKind::Comma => 97,
             TokenKind::Keyword(_) => 93,
-            TokenKind::IntNumber(_) => 95,
+            TokenKind::Number(_) => 95,
             TokenKind::Str(_) => 94,
             TokenKind::Invalid(_) => 91,
             _ => 0,
@@ -124,7 +124,7 @@ impl Tokenizer {
                         pos += 1;
                     }
                 }
-                '0'..='9' => {
+                '0'..='9' | '-' => {
                     tokens.push(Tokenizer::consume_number(&chars, &mut pos));
                 }
                 '"' => {
@@ -192,7 +192,7 @@ impl Tokenizer {
         let mut fragment = String::new();
 
         while *pos < chars.len() {
-            if !chars[*pos].is_ascii_digit() {
+            if !(chars[*pos].is_ascii_digit() || chars[*pos] == '.' || chars[*pos] == '-') {
                 break;
             }
 
@@ -203,7 +203,7 @@ impl Tokenizer {
         let fragment_len = fragment.len();
 
         Token::new(
-            TokenKind::IntNumber(fragment.clone()),
+            TokenKind::Number(fragment.clone()),
             *pos - fragment_len,
             fragment_len,
             fragment,
@@ -312,7 +312,7 @@ mod test {
         assert_eq!(TokenKind::OpenParen, tokens[2].kind);
         assert_eq!(TokenKind::Keyword("first".into()), tokens[3].kind);
         assert_eq!(TokenKind::Colon, tokens[4].kind);
-        assert_eq!(TokenKind::IntNumber("1".to_string()), tokens[5].kind);
+        assert_eq!(TokenKind::Number("1".to_string()), tokens[5].kind);
         assert_eq!(TokenKind::CloseParen, tokens[6].kind);
         assert_eq!(TokenKind::CloseBrace, tokens[7].kind);
     }
@@ -346,7 +346,7 @@ mod test {
             tokens[1]
         );
         assert_eq!(
-            Token::new(TokenKind::IntNumber("123".to_string()), 13, 3, "123".into()),
+            Token::new(TokenKind::Number("123".to_string()), 13, 3, "123".into()),
             tokens[2]
         );
         assert_eq!(
@@ -395,5 +395,21 @@ mod test {
         let tokens = Tokenizer::tokenize("abc\"\ndef", true);
         assert_eq!(4, tokens.len());
         assert_eq!(TokenKind::LineBreak, tokens[2].kind);
+    }
+
+    #[test]
+    fn test_float() {
+        let tokens = Tokenizer::tokenize("12.12 0.23", false);
+        assert_eq!(2, tokens.len());
+        assert_eq!(TokenKind::Number("12.12".to_string()), tokens[0].kind);
+        assert_eq!(TokenKind::Number("0.23".to_string()), tokens[1].kind);
+    }
+
+    #[test]
+    fn test_negative() {
+        let tokens = Tokenizer::tokenize("-0.12 -3", false);
+        assert_eq!(2, tokens.len());
+        assert_eq!(TokenKind::Number("-0.12".to_string()), tokens[0].kind);
+        assert_eq!(TokenKind::Number("-3".to_string()), tokens[1].kind);
     }
 }

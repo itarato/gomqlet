@@ -195,7 +195,7 @@ impl Parser {
         let token = self.peek_token_cloned();
         match token {
             Some(Token {
-                kind: TokenKind::IntNumber(_),
+                kind: TokenKind::Number(_),
                 ..
             })
             | Some(Token {
