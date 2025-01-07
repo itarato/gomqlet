@@ -12,9 +12,10 @@ pub struct JsonPathRoot {
     nest: Vec<JsonNest>,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum JsonPathResult {
     String(String),
-    Integer(i32),
+    Integer(i64),
 }
 
 impl JsonPathRoot {
@@ -90,13 +91,48 @@ impl JsonPathRoot {
     }
 
     pub fn extract(&self, value: &Value) -> Result<JsonPathResult, Error> {
-        unimplemented!()
+        let final_node = JsonPathRoot::walk_nesting(&value, &self.nest[..])?;
+
+        if final_node.is_string() {
+            Ok(JsonPathResult::String(
+                final_node.as_str().unwrap().to_string(),
+            ))
+        } else if final_node.is_i64() {
+            Ok(JsonPathResult::Integer(final_node.as_i64().unwrap()))
+        } else {
+            Err(format!("Unexpected JSON value type: {:?}", final_node).into())
+        }
+    }
+
+    pub fn walk_nesting<'a>(value: &'a Value, nest: &[JsonNest]) -> Result<&'a Value, Error> {
+        if nest.is_empty() {
+            Ok(value)
+        } else {
+            match &nest[0] {
+                JsonNest::Key(key) => {
+                    if !value.is_object() {
+                        Err(format!("Expected object, got: {:?}", value).into())
+                    } else {
+                        JsonPathRoot::walk_nesting(&value.as_object().unwrap()[key], &nest[1..])
+                    }
+                }
+                JsonNest::Index(index) => {
+                    if !value.is_array() {
+                        Err(format!("Expected list, got: {:?}", value).into())
+                    } else {
+                        JsonPathRoot::walk_nesting(&value.as_array().unwrap()[*index], &nest[1..])
+                    }
+                }
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::json_path::JsonNest;
+    use serde_json::Value;
+
+    use crate::json_path::{JsonNest, JsonPathResult};
 
     use super::JsonPathRoot;
 
@@ -129,5 +165,41 @@ mod test {
         assert_eq!(JsonNest::Index(0), root.nest[2]);
         assert_eq!(JsonNest::Index(1), root.nest[3]);
         assert_eq!(JsonNest::Key("baz".to_string()), root.nest[4]);
+    }
+
+    #[test]
+    fn extract_empty() {
+        let root = JsonPathRoot::from("$").unwrap();
+        let json: Value = serde_json::from_str("12").unwrap();
+        let result = root.extract(&json).unwrap();
+
+        assert_eq!(JsonPathResult::Integer(12), result);
+    }
+
+    #[test]
+    fn extract_deep() {
+        let root = JsonPathRoot::from("$.foo.bar[2][0].baz").unwrap();
+        let json: Value = serde_json::from_str(
+            r#"
+                {
+                    "foo": {
+                        "bar": [
+                            [],
+                            [],
+                            [
+                                {
+                                    "baz": 42,
+                                    "bum": -1
+                                }
+                            ]
+                        ]
+                    }
+                }
+            "#,
+        )
+        .unwrap();
+        let result = root.extract(&json).unwrap();
+
+        assert_eq!(JsonPathResult::Integer(42), result);
     }
 }
