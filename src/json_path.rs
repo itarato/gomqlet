@@ -113,14 +113,34 @@ impl JsonPathRoot {
                     if !value.is_object() {
                         Err(format!("Expected object, got: {:?}", value).into())
                     } else {
-                        JsonPathRoot::walk_nesting(&value.as_object().unwrap()[key], &nest[1..])
+                        JsonPathRoot::walk_nesting(
+                            &value
+                                .as_object()
+                                .expect("Walk error -> not an object")
+                                .get(key)
+                                .expect(&format!(
+                                    "Walk error -> no value for key '{}' in {:?}",
+                                    key, value
+                                )),
+                            &nest[1..],
+                        )
                     }
                 }
                 JsonNest::Index(index) => {
                     if !value.is_array() {
                         Err(format!("Expected list, got: {:?}", value).into())
                     } else {
-                        JsonPathRoot::walk_nesting(&value.as_array().unwrap()[*index], &nest[1..])
+                        JsonPathRoot::walk_nesting(
+                            &value
+                                .as_array()
+                                .expect("Walk erro -> not an array")
+                                .get(*index)
+                                .expect(&format!(
+                                    "Walk error -> no value for index '{}' in {:?}",
+                                    index, value
+                                )),
+                            &nest[1..],
+                        )
                     }
                 }
             }

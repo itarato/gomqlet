@@ -1,7 +1,7 @@
 use regex::Regex;
 use reqwest::blocking::Response;
 use serde_json::Value;
-use std::{fs::File, io::Read};
+use std::{fs::File, io::Read, ops::RangeBounds};
 
 use crate::{
     config::Config,
@@ -45,6 +45,7 @@ impl NetOps {
             request = request.header(key, value);
         }
 
+        let query = self.replace_magic_values(query);
         let body = format!("{{ \"query\": \"{}\" }}", query);
 
         debug!("Body: {}", &body);
@@ -63,11 +64,11 @@ impl NetOps {
         response_body
     }
 
-    fn replace_magic_values(&self, lhs: &str) -> String {
-        let mut lhs = lhs.to_string();
+    fn replace_magic_values(&self, subject: &str) -> String {
+        let mut out = subject.to_string();
 
         let re = Regex::new("<([^>]+)>").unwrap();
-        let matches = re.captures_iter(&lhs).collect::<Vec<_>>();
+        let matches = re.captures_iter(subject).collect::<Vec<_>>();
 
         for captures in matches.iter().rev() {
             if let Some(re_match) = captures.iter().nth(1).unwrap() {
@@ -77,6 +78,8 @@ impl NetOps {
                             let mut buf = String::new();
                             file.read_to_string(&mut buf)?;
 
+                            let buf = buf.replace('\n', "");
+
                             let response = self.raw_execute_graphql_operation(&buf);
                             Ok(serde_json::from_reader::<_, Value>(response).unwrap())
                         });
@@ -85,24 +88,30 @@ impl NetOps {
                             continue;
                         }
 
-                        match JsonPathRoot::from(&query_command.json_path).and_then(
-                            |json_path_root| json_path_root.extract(&json_response.unwrap()),
-                        ) {
-                            Ok(JsonPathResult::Integer(int_value)) => unimplemented!(),
-                            Ok(JsonPathResult::String(str_value)) => unimplemented!(),
+                        let replacement = match JsonPathRoot::from(&query_command.json_path)
+                            .and_then(|json_path_root| {
+                                json_path_root.extract(&json_response.unwrap())
+                            }) {
+                            Ok(JsonPathResult::Integer(int_value)) => int_value.to_string(),
+                            Ok(JsonPathResult::String(str_value)) => {
+                                format!("\\\"{}\\\"", str_value)
+                            }
                             Err(err) => {
                                 error!("Error during magic value parsing: {}", err);
                                 continue;
                             }
-                        }
+                        };
 
-                        // TODO: replace.
+                        out.replace_range(
+                            re_match.range().start - 1..re_match.range().end + 1,
+                            &replacement,
+                        );
                     }
                     Err(err) => error!("Magic value parse error: {}", err),
                 };
             }
         }
 
-        lhs
+        out
     }
 }
