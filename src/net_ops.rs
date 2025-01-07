@@ -85,12 +85,15 @@ impl NetOps {
                             continue;
                         }
 
-                        match JsonPathRoot::from(&query_command.json_path)
-                            .extract(&json_response.unwrap())
-                        {
+                        match JsonPathRoot::from(&query_command.json_path).and_then(
+                            |json_path_root| json_path_root.extract(&json_response.unwrap()),
+                        ) {
                             Ok(JsonPathResult::Integer(int_value)) => unimplemented!(),
                             Ok(JsonPathResult::String(str_value)) => unimplemented!(),
-                            _ => continue,
+                            Err(err) => {
+                                error!("Error during magic value parsing: {}", err);
+                                continue;
+                            }
                         }
 
                         // TODO: replace.

@@ -4,6 +4,8 @@ pub struct CoordUsize {
     pub y: usize,
 }
 
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
+
 pub fn trim_coloured_string_list(elems: Vec<(String, Option<usize>)>, max_len: usize) -> String {
     let mut len = 0usize;
     let mut out_elems: Vec<String> = vec![];
