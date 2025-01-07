@@ -22,6 +22,7 @@ mod editor;
 mod editor_printer;
 mod file_selector;
 mod file_selector_printer;
+mod magic_command;
 mod net_ops;
 mod parser;
 mod schema;
