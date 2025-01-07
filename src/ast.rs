@@ -95,7 +95,6 @@ pub enum ParamValue {
     Object(ArgList),
     // For error correction reasons a placeholder type.
     Missing((usize, usize)), // (start_pos, end_pos)
-                             // TODO: object, list
 }
 
 impl ParamValue {

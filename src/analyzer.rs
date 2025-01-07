@@ -173,13 +173,6 @@ impl Analyzer {
                 let current_arg_type = &current_arg.arg_type;
 
                 return self.find_pos_in_arglist_value(&arg.value, current_arg_type, pos);
-
-                // TODO!!!
-                // todo!("On-value autocomplete (simple,list,object)");
-
-                // TODO: when the cursor is after the last keyword, the replacement `Missing` type has no length,
-                //       so this function cannot identify it and offer values options.
-                //       Maybe make the missing value own a length (between colon and next token)?
             }
 
             return Ok(None);
