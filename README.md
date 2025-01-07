@@ -13,6 +13,7 @@ Features:
 - (basic) error detection
 - query / mutation exection (over HTTP)
 - file browser
+- query chaining (with result insertion)
 
 ## Use
 
@@ -63,4 +64,3 @@ GraphQL:
 - magic tokens (eg.: random string)
     - random string
     - random number
-    - value from another query

@@ -1,7 +1,7 @@
 use regex::Regex;
 use reqwest::blocking::Response;
 use serde_json::Value;
-use std::{fs::File, io::Read, ops::RangeBounds};
+use std::{fs::File, io::Read};
 
 use crate::{
     config::Config,
@@ -35,7 +35,7 @@ impl NetOps {
 
         let json: Value = serde_json::from_str(&response_body).unwrap();
 
-        info!("{:#?}", json);
+        info!("\x1B[95mResponse: \x1B[93m{:#?}\x1B[0m", json);
     }
 
     fn raw_execute_graphql_operation(&self, query: &str) -> Response {
@@ -48,9 +48,9 @@ impl NetOps {
         let query = self.replace_magic_values(query);
         let body = format!("{{ \"query\": \"{}\" }}", query);
 
-        debug!("Body: {}", &body);
-        debug!("Headers: {:?}", self.headers);
-        debug!("URL: {}", self.url);
+        debug!("\x1B[95mBody: \x1B[94m{}\x1B[0m", &body);
+        debug!("\x1B[95mHeaders: \x1B[94m{:?}\x1B[0m", self.headers);
+        debug!("\x1B[95mURL: \x1B[94m{}\x1B[0m", self.url);
 
         request.body(body).send().unwrap()
     }
