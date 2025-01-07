@@ -46,8 +46,6 @@ impl Parser {
             self.ptr += 1;
         }
 
-        // TODO variables.
-
         let field_list = self.parse_fields_subobject()?;
 
         Ok(ast::Query {
@@ -64,8 +62,6 @@ impl Parser {
         let start_pos = self.peek_token().unwrap().pos;
 
         self.ptr += 1;
-
-        // TODO variables.
 
         let field_list = self.parse_fields_subobject()?;
 

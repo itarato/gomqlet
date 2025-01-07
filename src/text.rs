@@ -22,7 +22,6 @@ pub struct Text {
 
 impl Text {
     pub fn new(file_path: Option<PathBuf>) -> Text {
-        // TODO: lets use Option<PathBuf> here and use `reload_from_file`.
         let lines = if let Some(file_path) = &file_path {
             let mut file = File::open(file_path).expect("Cannot load source file");
             let mut source = String::new();
