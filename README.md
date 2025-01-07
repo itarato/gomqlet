@@ -21,13 +21,23 @@ Features:
 cargo run -- -h
 ```
 
-Bindings:
+### Bindings
 
 - `CTRL-O` and then `DIGIT` / `ALT-<DIGIT>`: apply suggestion
 - `CTRL-G`: execute query
 - `CTRL-C` / `CTRL-D`: quit application
 - `ALT-F` / `CTRL-F`: file browser
 - `ALT-S`: save file
+
+### Magic tokens
+
+Format: `<` + definition + `>`
+
+Types:
+
+- Query chaining: `query::FILE_NAME::JSON_PATH` (example: `<query::users.graphql::$.data.users.edges[0].node.name>`)
+- Random string: `random_string::LENGTH` (example: `<random_string::10>`)
+- Random integer: `random_integer::MIN::MAX` (example: `<random_integer::0::100>`)
 
 ## Todo
 
@@ -65,10 +75,8 @@ File browser:
 
 GraphQL:
 
-- magic tokens (eg.: random string)
-    - random string
-    - random number
+-
 
 Docs:
 
-- magic tokens
+- 
