@@ -1,9 +1,4 @@
-use std::{
-    cell::RefCell,
-    io::{self},
-    path::PathBuf,
-    rc::Rc,
-};
+use std::{cell::RefCell, io, path::PathBuf, rc::Rc};
 
 use clap::Parser;
 use command_line_params::CommandLineParams;

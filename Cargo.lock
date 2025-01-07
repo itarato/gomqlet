@@ -373,6 +373,7 @@ dependencies = [
  "clap",
  "log",
  "pretty_env_logger",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",

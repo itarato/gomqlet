@@ -1,3 +1,4 @@
+use regex::Regex;
 use reqwest::blocking::Response;
 use serde_json::Value;
 use std::io::Read;
@@ -56,5 +57,23 @@ impl NetOps {
         response.read_to_string(&mut response_body).unwrap();
 
         response_body
+    }
+
+    fn replace_magic_values(&self, lhs: &str) -> String {
+        let mut lhs = lhs.to_string();
+
+        let re = Regex::new("<([^>]+)>").unwrap();
+        let matches = re.captures_iter(&lhs).collect::<Vec<_>>();
+
+        for captures in matches.iter().rev() {
+            if let Some(re_match) = captures.iter().nth(1).unwrap() {
+                // match self.magic_value_parser.parse(re_match.as_str()) {
+                //      Some(MagicCommand::Query) => {},
+                //      _ => {},
+                // }
+            }
+        }
+
+        lhs
     }
 }
