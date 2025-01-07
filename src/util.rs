@@ -1,3 +1,5 @@
+use rand::prelude::*;
+
 #[derive(Debug, Clone)]
 pub struct CoordUsize {
     pub x: usize,
@@ -49,4 +51,15 @@ pub fn fuzzy_match(subject: &str, pattern: &str) -> Option<Vec<usize>> {
     }
 
     None
+}
+
+pub fn random_integer(min: i32, max: i32) -> i32 {
+    (random::<i32>() % (max - min)) + min
+}
+
+pub fn random_string(len: usize) -> String {
+    (0..len)
+        .into_iter()
+        .map(|_| (random::<u8>() % (b'z' - b'a' + 1) + b'a') as char)
+        .collect()
 }

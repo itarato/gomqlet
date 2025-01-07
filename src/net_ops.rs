@@ -7,6 +7,7 @@ use crate::{
     config::Config,
     json_path::{JsonPathResult, JsonPathRoot},
     magic_command::MagicCommand,
+    util::{random_integer, random_string},
 };
 
 const INSPECTION_QUERY: &'static str = "query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { ...FullType } directives { name description locations args { ...InputValue } } }}fragment FullType on __Type { kind name description fields(includeDeprecated: true) { name description args { ...InputValue } type { ...TypeRef } isDeprecated deprecationReason } inputFields { ...InputValue } interfaces { ...TypeRef } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { ...TypeRef }}fragment InputValue on __InputValue { name description type { ...TypeRef } defaultValue}fragment TypeRef on __Type { kind name ofType { kind name ofType { kind name ofType { kind name } } }}";
@@ -72,7 +73,7 @@ impl NetOps {
 
         for captures in matches.iter().rev() {
             if let Some(re_match) = captures.iter().nth(1).unwrap() {
-                match MagicCommand::from(re_match.as_str()) {
+                let replacement = match MagicCommand::from(re_match.as_str()) {
                     Ok(MagicCommand::Query(query_command)) => {
                         let json_response = File::open(&query_command.file).and_then(|mut file| {
                             let mut buf = String::new();
@@ -88,10 +89,9 @@ impl NetOps {
                             continue;
                         }
 
-                        let replacement = match JsonPathRoot::from(&query_command.json_path)
-                            .and_then(|json_path_root| {
-                                json_path_root.extract(&json_response.unwrap())
-                            }) {
+                        match JsonPathRoot::from(&query_command.json_path).and_then(
+                            |json_path_root| json_path_root.extract(&json_response.unwrap()),
+                        ) {
                             Ok(JsonPathResult::Integer(int_value)) => int_value.to_string(),
                             Ok(JsonPathResult::String(str_value)) => {
                                 format!("\\\"{}\\\"", str_value)
@@ -100,15 +100,24 @@ impl NetOps {
                                 error!("Error during magic value parsing: {}", err);
                                 continue;
                             }
-                        };
-
-                        out.replace_range(
-                            re_match.range().start - 1..re_match.range().end + 1,
-                            &replacement,
-                        );
+                        }
                     }
-                    Err(err) => error!("Magic value parse error: {}", err),
+                    Ok(MagicCommand::RandomInteger((min, max))) => {
+                        random_integer(min, max).to_string()
+                    }
+                    Ok(MagicCommand::RandomString(len)) => {
+                        format!("\\\"{}\\\"", random_string(len))
+                    }
+                    Err(err) => {
+                        error!("Magic value parse error: {}", err);
+                        continue;
+                    }
                 };
+
+                out.replace_range(
+                    re_match.range().start - 1..re_match.range().end + 1,
+                    &replacement,
+                );
             }
         }
 
