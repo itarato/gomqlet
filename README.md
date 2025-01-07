@@ -35,6 +35,10 @@ Bug:
 
 - some suggestion shows after closing braces
 
+Generic:
+
+- MacOS keyboard combos
+
 Editor:
 
 - try showing suggestions on the cursor position
@@ -64,3 +68,7 @@ GraphQL:
 - magic tokens (eg.: random string)
     - random string
     - random number
+
+Docs:
+
+- magic tokens
