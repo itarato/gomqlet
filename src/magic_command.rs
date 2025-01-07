@@ -1,6 +1,6 @@
 pub struct QueryCommand {
     pub file: String,
-    pub xpath: String,
+    pub json_path: String,
 }
 
 pub enum MagicCommand {
@@ -19,12 +19,12 @@ impl MagicCommand {
 
     fn parse_query(parts: &[&str]) -> Result<MagicCommand, String> {
         if parts.len() != 2 {
-            return Err("Query command must have 2 arguments: file + xpath".to_string());
+            return Err("Query command must have 2 arguments: file + json path".to_string());
         }
 
         Ok(MagicCommand::Query(QueryCommand {
             file: parts[0].to_string(),
-            xpath: parts[1].to_string(),
+            json_path: parts[1].to_string(),
         }))
     }
 }

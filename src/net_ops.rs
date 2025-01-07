@@ -3,7 +3,11 @@ use reqwest::blocking::Response;
 use serde_json::Value;
 use std::{fs::File, io::Read};
 
-use crate::{config::Config, magic_command::MagicCommand};
+use crate::{
+    config::Config,
+    json_path::{JsonPathResult, JsonPathRoot},
+    magic_command::MagicCommand,
+};
 
 const INSPECTION_QUERY: &'static str = "query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { ...FullType } directives { name description locations args { ...InputValue } } }}fragment FullType on __Type { kind name description fields(includeDeprecated: true) { name description args { ...InputValue } type { ...TypeRef } isDeprecated deprecationReason } inputFields { ...InputValue } interfaces { ...TypeRef } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { ...TypeRef }}fragment InputValue on __InputValue { name description type { ...TypeRef } defaultValue}fragment TypeRef on __Type { kind name ofType { kind name ofType { kind name ofType { kind name } } }}";
 
@@ -69,21 +73,30 @@ impl NetOps {
             if let Some(re_match) = captures.iter().nth(1).unwrap() {
                 match MagicCommand::from(re_match.as_str()) {
                     Ok(MagicCommand::Query(query_command)) => {
-                        let x = File::open(&query_command.file).and_then(|mut file| {
+                        let json_response = File::open(&query_command.file).and_then(|mut file| {
                             let mut buf = String::new();
                             file.read_to_string(&mut buf)?;
 
-                            let mut response = self.raw_execute_graphql_operation(&buf);
-                            let mut response_body = String::new();
-                            response.read_to_string(&mut response_body)?;
-
-                            // TODO: Apply xpath on response body.
-
-                            Ok(response_body)
+                            let response = self.raw_execute_graphql_operation(&buf);
+                            Ok(serde_json::from_reader::<_, Value>(response).unwrap())
                         });
+
+                        if json_response.is_err() {
+                            continue;
+                        }
+
+                        match JsonPathRoot::from(&query_command.json_path)
+                            .extract(&json_response.unwrap())
+                        {
+                            Ok(JsonPathResult::Integer(int_value)) => unimplemented!(),
+                            Ok(JsonPathResult::String(str_value)) => unimplemented!(),
+                            _ => continue,
+                        }
+
+                        // TODO: replace.
                     }
                     Err(err) => error!("Magic value parse error: {}", err),
-                }
+                };
             }
         }
 
