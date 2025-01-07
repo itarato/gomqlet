@@ -44,6 +44,7 @@ pub enum TokenKind {
     Whitespace(String),
     LineBreak,
     Invalid(String),
+    MagicValue(String),
 }
 
 impl TokenKind {
@@ -56,6 +57,7 @@ impl TokenKind {
             TokenKind::Number(_) => 95,
             TokenKind::Str(_) => 94,
             TokenKind::Invalid(_) => 91,
+            TokenKind::MagicValue(_) => 44,
             _ => 0,
         }
     }
@@ -129,6 +131,9 @@ impl Tokenizer {
                 }
                 '"' => {
                     tokens.push(Tokenizer::consume_string(&chars, &mut pos));
+                }
+                '<' => {
+                    tokens.push(Tokenizer::consume_magic_value(&chars, &mut pos));
                 }
                 _ => {
                     tokens.push(Token::new(
@@ -249,6 +254,52 @@ impl Tokenizer {
             let original_len = original.len();
             Token::new(
                 TokenKind::Invalid("Invalid string token".into()),
+                *pos - original_len,
+                original_len,
+                original,
+            )
+        }
+    }
+
+    fn consume_magic_value(chars: &Vec<char>, pos: &mut usize) -> Token {
+        let mut original = String::new();
+        let mut fragment = String::new();
+
+        original.push(chars[*pos]);
+
+        *pos += 1; // < sign.
+
+        let mut has_closing_angle_quote = false;
+
+        while *pos < chars.len() {
+            if chars[*pos] == '>' {
+                has_closing_angle_quote = true;
+                break;
+            }
+            if chars[*pos] == '\n' {
+                break;
+            }
+
+            fragment.push(chars[*pos]);
+            original.push(chars[*pos]);
+            *pos += 1;
+        }
+
+        if has_closing_angle_quote {
+            original.push(chars[*pos]);
+            *pos += 1; // Closing quote;
+            let fragment_len = fragment.len();
+
+            Token::new(
+                TokenKind::MagicValue(fragment.clone()),
+                *pos - fragment_len - 2,
+                fragment_len + 2,
+                original,
+            )
+        } else {
+            let original_len = original.len();
+            Token::new(
+                TokenKind::Invalid("Invalid magic value token".into()),
                 *pos - original_len,
                 original_len,
                 original,
@@ -411,5 +462,15 @@ mod test {
         assert_eq!(2, tokens.len());
         assert_eq!(TokenKind::Number("-0.12".to_string()), tokens[0].kind);
         assert_eq!(TokenKind::Number("-3".to_string()), tokens[1].kind);
+    }
+
+    #[test]
+    fn test_magic_value() {
+        let tokens = Tokenizer::tokenize("input(name: <command:params>)", false);
+        assert_eq!(6, tokens.len());
+        assert_eq!(
+            TokenKind::MagicValue("command:params".to_string()),
+            tokens[4].kind
+        );
     }
 }

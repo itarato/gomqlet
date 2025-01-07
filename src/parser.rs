@@ -205,6 +205,10 @@ impl Parser {
             | Some(Token {
                 kind: TokenKind::Keyword(_),
                 ..
+            })
+            | Some(Token {
+                kind: TokenKind::MagicValue(_),
+                ..
             }) => {
                 self.ptr += 1;
                 Ok(ast::ParamValue::Simple(token.unwrap()))

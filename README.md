@@ -40,7 +40,7 @@ Editor:
 
 Tokenizier:
 
-- floats
+- 
 
 Parsing:
 
@@ -61,3 +61,6 @@ File browser:
 GraphQL:
 
 - magic tokens (eg.: random string)
+    - random string
+    - random number
+    - value from another query
