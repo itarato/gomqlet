@@ -106,7 +106,7 @@ impl Analyzer {
             if let Some(arglist) = &field.arglist {
                 if arglist.range_exclusive().contains(&pos) {
                     return scope
-                        .field(field.name.original.clone())
+                        .field(&field.name.original)
                         .ok_or(format!("Invalid field {}", field.name.original).into())
                         .and_then(|field_def| {
                             self.find_pos_in_arglist(arglist, pos, &field_def.args)
@@ -118,7 +118,7 @@ impl Analyzer {
                 if field_list.range_exclusive().contains(&pos) {
                     return self
                         .schema
-                        .field_type(scope, field.name.original.clone())
+                        .field_type(scope, &field.name.original)
                         .and_then(|subfield_type_definition| {
                             self.find_pos_in_field_list(field_list, pos, subfield_type_definition)
                         });

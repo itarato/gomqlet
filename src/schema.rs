@@ -325,7 +325,7 @@ impl Type {
         }
     }
 
-    pub fn field(&self, name: String) -> Option<&Field> {
+    pub fn field(&self, name: &str) -> Option<&Field> {
         match self {
             Type::Object(object_type) | Type::Interface(object_type) => {
                 for field in &object_type.fields {
@@ -435,9 +435,9 @@ impl Schema {
             .collect()
     }
 
-    pub fn field_type(&self, type_definition: &Type, field_name: String) -> Result<&Type, Error> {
+    pub fn field_type(&self, type_definition: &Type, field_name: &str) -> Result<&Type, Error> {
         type_definition
-            .field(field_name.clone())
+            .field(&field_name)
             .ok_or(format!("Field {} not found", field_name).into())
             .and_then(|field_definition| {
                 field_definition
