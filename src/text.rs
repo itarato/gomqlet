@@ -275,13 +275,13 @@ impl Text {
         n
     }
 
-    pub fn apply_suggestion(&mut self, suggestion: Suggestion, idx: usize) {
+    pub fn apply_suggestion(&mut self, suggestion: &Suggestion, idx: usize) {
         if idx >= suggestion.elems.len() {
             error!("Suggestion selection index out of bounds");
             return;
         }
 
-        match suggestion.token {
+        match &suggestion.token {
             Some(token) => {
                 let token_start_cursor = self.cursor_of_absolute_position(token.pos);
                 self.lines[token_start_cursor.y].replace_range(

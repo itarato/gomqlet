@@ -48,7 +48,7 @@ impl Editor {
                 if self.state == State::SuggestionSelect {
                     if code >= b'0' && code <= b'9' {
                         self.content.borrow_mut().apply_suggestion(
-                            self.previous_suggestion.clone().unwrap(),
+                            self.previous_suggestion.as_ref().unwrap(),
                             (code - b'0') as usize,
                         );
                     }
@@ -68,7 +68,7 @@ impl Editor {
             KeyboardInput::AltDigit(digit) => {
                 self.content
                     .borrow_mut()
-                    .apply_suggestion(self.previous_suggestion.clone().unwrap(), digit as usize);
+                    .apply_suggestion(self.previous_suggestion.as_ref().unwrap(), digit as usize);
             }
             KeyboardInput::CtrlW => self.content.borrow_mut().delete_word(),
             _ => {
