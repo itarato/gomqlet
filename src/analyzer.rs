@@ -90,11 +90,16 @@ impl Analyzer {
         }
 
         // In query but not on fields. -> can offer fields.
-        trace!("Suggestion on all fields of a field list");
-        Ok(Some(Suggestion {
-            elems: scope.field_names(""),
-            token: None,
-        }))
+        match scope {
+            &schema::Type::Object(_) | &schema::Type::Interface(_) => {
+                trace!("Suggestion on all fields of a field list");
+                Ok(Some(Suggestion {
+                    elems: scope.field_names(""),
+                    token: None,
+                }))
+            }
+            _ => Ok(None),
+        }
     }
 
     fn find_pos_in_field(

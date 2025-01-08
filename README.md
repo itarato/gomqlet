@@ -55,6 +55,7 @@ Only `.graphql` file types (text/plain) can be opened.
 Bug:
 
 - some suggestion shows after closing braces
+- union suggestion replacement replaces the whole space between `on` and `{` as the fake keyword token is that wide
 
 Generic:
 
