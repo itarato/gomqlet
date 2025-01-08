@@ -24,12 +24,17 @@ const ESCAPE_COMBOS: &[(&[u8], KeyboardInput)] = &[
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyboardInput {
-    Key(u8),
+    VisibleChar(u8),
+    ControlChar(u8),
 
     CtrlC,
     CtrlD,
     CtrlF,
     CtrlW,
+    CtrlS,
+    CtrlR,
+    CtrlG,
+    CtrlO,
 
     AltDigit(u8),
     AltF,
@@ -43,6 +48,10 @@ pub enum KeyboardInput {
     Home,
     End,
     Delete,
+    Enter,
+    Escape,
+    Backspace,
+    Tab,
 }
 
 pub struct StdinReader;
@@ -67,7 +76,7 @@ impl StdinReader {
         trace!("Input: {:?}", &buf[0..len]);
 
         while i < len {
-            if buf[i] == 27 {
+            if buf[i] == 27 && len > 1 {
                 for (seq, ki) in ESCAPE_COMBOS {
                     if i + seq.len() <= len {
                         if *seq == &buf[i..i + seq.len()] {
@@ -95,11 +104,38 @@ impl StdinReader {
             } else if buf[i] == 6 {
                 out.push(KeyboardInput::CtrlF);
                 i += 1;
+            } else if buf[i] == 7 {
+                out.push(KeyboardInput::CtrlG);
+                i += 1;
+            } else if buf[i] == 9 {
+                out.push(KeyboardInput::Tab);
+                i += 1;
+            } else if buf[i] == 13 {
+                out.push(KeyboardInput::Enter);
+                i += 1;
+            } else if buf[i] == 15 {
+                out.push(KeyboardInput::CtrlO);
+                i += 1;
+            } else if buf[i] == 18 {
+                out.push(KeyboardInput::CtrlR);
+                i += 1;
+            } else if buf[i] == 19 {
+                out.push(KeyboardInput::CtrlS);
+                i += 1;
             } else if buf[i] == 23 {
                 out.push(KeyboardInput::CtrlW);
                 i += 1;
+            } else if buf[i] == 27 {
+                out.push(KeyboardInput::Escape);
+                i += 1;
+            } else if buf[i] == 127 {
+                out.push(KeyboardInput::Backspace);
+                i += 1;
+            } else if buf[i] >= 32 && buf[i] <= 126 {
+                out.push(KeyboardInput::VisibleChar(buf[i]));
+                i += 1;
             } else {
-                out.push(KeyboardInput::Key(buf[i]));
+                out.push(KeyboardInput::ControlChar(buf[i]));
                 i += 1;
             }
         }

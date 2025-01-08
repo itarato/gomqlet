@@ -64,6 +64,10 @@ impl EditorPrinter {
         io::stdout().flush().expect("Cannot flush STDOUT");
     }
 
+    pub fn reload_terminal_size(&mut self) {
+        self.terminal_dimension = term_size::dimensions().unwrap();
+    }
+
     fn print_tokens(&mut self, buf: &mut String, tokens: Vec<Token>, cursor_y: usize) {
         TerminalHandler::append_cursor_location(buf, 0, 0);
 

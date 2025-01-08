@@ -92,7 +92,7 @@ impl Gomqlet {
             for cmd in StdinReader::read_commands()? {
                 if cmd == KeyboardInput::CtrlC || cmd == KeyboardInput::CtrlD {
                     return Ok(());
-                } else if cmd == KeyboardInput::Key(7) {
+                } else if cmd == KeyboardInput::CtrlG {
                     // CTRL-G
                     self.net_ops
                         .execute_graphql_operation(&self.content.borrow().to_string_no_new_lines());

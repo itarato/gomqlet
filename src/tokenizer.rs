@@ -36,13 +36,14 @@ pub enum TokenKind {
     CloseParen,   // )
     OpenBracket,  // [
     CloseBracket, // ]
-    Colon,
-    Comma,
+    Colon,        // :
+    Comma,        // ,
+    Ellipsis,     // ...
+    LineBreak,
     Number(String),
     Keyword(String),
     Str(String),
     Whitespace(String),
-    LineBreak,
     Invalid(String),
     MagicValue(String),
 }
@@ -116,9 +117,6 @@ impl Tokenizer {
                     }
                     pos += 1;
                 }
-                'a'..='z' | 'A'..='Z' => {
-                    tokens.push(Tokenizer::consume_keyword(&chars, &mut pos));
-                }
                 ' ' | '\t' => {
                     if record_whitespace {
                         tokens.push(Tokenizer::consume_whitespace(&chars, &mut pos));
@@ -126,15 +124,11 @@ impl Tokenizer {
                         pos += 1;
                     }
                 }
-                '0'..='9' | '-' => {
-                    tokens.push(Tokenizer::consume_number(&chars, &mut pos));
-                }
-                '"' => {
-                    tokens.push(Tokenizer::consume_string(&chars, &mut pos));
-                }
-                '<' => {
-                    tokens.push(Tokenizer::consume_magic_value(&chars, &mut pos));
-                }
+                'a'..='z' | 'A'..='Z' => tokens.push(Tokenizer::consume_keyword(&chars, &mut pos)),
+                '0'..='9' | '-' => tokens.push(Tokenizer::consume_number(&chars, &mut pos)),
+                '"' => tokens.push(Tokenizer::consume_string(&chars, &mut pos)),
+                '<' => tokens.push(Tokenizer::consume_magic_value(&chars, &mut pos)),
+                '.' => tokens.push(Tokenizer::consume_ellipsis(&chars, &mut pos)),
                 _ => {
                     tokens.push(Token::new(
                         TokenKind::Invalid("Invalid character".into()),
@@ -148,6 +142,31 @@ impl Tokenizer {
         }
 
         tokens
+    }
+
+    fn consume_ellipsis(chars: &Vec<char>, pos: &mut usize) -> Token {
+        if chars.len() < *pos + 3 {
+            *pos += 1;
+            return Token::new(
+                TokenKind::Invalid("Invalid ellipsis lenght".to_string()),
+                *pos,
+                1,
+                chars[*pos].to_string(),
+            );
+        }
+
+        if chars[*pos] != '.' || chars[*pos + 1] != '.' || chars[*pos + 2] != '.' {
+            *pos += 1;
+            return Token::new(
+                TokenKind::Invalid("Invalid ellipsis chars".to_string()),
+                *pos,
+                1,
+                chars[*pos].to_string(),
+            );
+        }
+
+        *pos += 3;
+        return Token::new(TokenKind::Ellipsis, *pos, 3, "...".to_string());
     }
 
     fn consume_keyword(chars: &Vec<char>, pos: &mut usize) -> Token {
@@ -472,5 +491,12 @@ mod test {
             TokenKind::MagicValue("command:params".to_string()),
             tokens[4].kind
         );
+    }
+
+    #[test]
+    fn test_ellipsis() {
+        let tokens = Tokenizer::tokenize("... on {}", false);
+        assert_eq!(4, tokens.len());
+        assert_eq!(TokenKind::Ellipsis, tokens[0].kind);
     }
 }

@@ -64,7 +64,7 @@ impl FileSelector {
             KeyboardInput::Down => {
                 self.selection_index = (self.selection_index + 1) % self.elem_len();
             }
-            KeyboardInput::Key(13) => {
+            KeyboardInput::Enter => {
                 if self.selection_index == 0 {
                     self.folder.pop();
                     self.selection_index = 0;
@@ -89,21 +89,26 @@ impl FileSelector {
 
     fn update_new_file_name_typing_state(&mut self, input: KeyboardInput) -> Option<Command> {
         match input {
-            KeyboardInput::Key(ch) => {
+            KeyboardInput::Enter => {
+                let mut new_file_path = self.folder.clone();
+                new_file_path.push(format!("{}.graphql", self.new_file_name.as_ref().unwrap()));
+
+                File::create(&new_file_path).expect("Failed creating new file");
+
+                self.state_selection();
+
+                return Some(Command::OpenFile(new_file_path));
+            }
+            KeyboardInput::Backspace => {
+                self.new_file_name.as_mut().unwrap().pop();
+            }
+            KeyboardInput::VisibleChar(ch) => {
                 if ch.is_ascii_alphanumeric() || ch == b'.' || ch == b'_' {
                     self.new_file_name.as_mut().unwrap().push(ch as char);
-                } else if ch == 13 {
-                    let mut new_file_path = self.folder.clone();
-                    new_file_path.push(format!("{}.graphql", self.new_file_name.as_ref().unwrap()));
-
-                    File::create(&new_file_path).expect("Failed creating new file");
-
-                    self.state_selection();
-
-                    return Some(Command::OpenFile(new_file_path));
-                } else if ch == 127 {
-                    self.new_file_name.as_mut().unwrap().pop();
                 }
+            }
+            KeyboardInput::Escape => {
+                self.state_selection();
             }
             _ => {}
         }

@@ -70,7 +70,7 @@ Tokenizier:
 
 Parsing:
 
--
+- union stuff: ... and on
 
 Analysis:
 
@@ -79,6 +79,7 @@ Analysis:
     - arg requirement
     - fieldset
     - fieldset emptiness
+- union types
 
 File browser:
 

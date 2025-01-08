@@ -40,11 +40,15 @@ impl Editor {
 
     pub fn update(&mut self, input: KeyboardInput) {
         match input {
-            KeyboardInput::Key(15) => {
+            KeyboardInput::CtrlO => {
                 // CTRL-O
                 self.state = State::SuggestionSelect;
             }
-            KeyboardInput::Key(code) => {
+            KeyboardInput::CtrlR => {
+                // CTRL-R
+                self.printer.reload_terminal_size();
+            }
+            KeyboardInput::VisibleChar(code) => {
                 if self.state == State::SuggestionSelect {
                     if code >= b'0' && code <= b'9' {
                         self.content.borrow_mut().apply_suggestion(
@@ -54,7 +58,7 @@ impl Editor {
                     }
                     self.state = State::Edit;
                 } else {
-                    self.handle_char_input(code);
+                    self.content.borrow_mut().insert_visible_char(code as char);
                 }
             }
             KeyboardInput::Left => self.content.borrow_mut().move_cursor_left(),
@@ -64,7 +68,10 @@ impl Editor {
             KeyboardInput::Delete => self.content.borrow_mut().delete(),
             KeyboardInput::Home => self.content.borrow_mut().move_cursor_to_home(),
             KeyboardInput::End => self.content.borrow_mut().move_cursor_to_end(),
-            KeyboardInput::AltS => self.content.borrow_mut().save_to_file(),
+            KeyboardInput::AltS | KeyboardInput::CtrlS => self.content.borrow_mut().save_to_file(),
+            KeyboardInput::Enter => self.content.borrow_mut().insert_new_line(),
+            KeyboardInput::Backspace => self.content.borrow_mut().backspace(),
+            KeyboardInput::Tab => self.content.borrow_mut().insert_tab(),
             KeyboardInput::AltDigit(digit) => {
                 self.content
                     .borrow_mut()
@@ -77,15 +84,6 @@ impl Editor {
         }
 
         self.refresh_screen();
-    }
-
-    fn handle_char_input(&mut self, ch: u8) {
-        match ch {
-            127 => self.content.borrow_mut().backspace(),
-            13 => self.content.borrow_mut().insert_new_line(),
-            9 => self.content.borrow_mut().insert_tab(),
-            ch => self.content.borrow_mut().insert_visible_char(ch as char),
-        }
     }
 
     pub fn refresh_screen(&mut self) {
