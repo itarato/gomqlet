@@ -130,7 +130,53 @@ impl Parser {
     }
 
     fn parse_union_field(&mut self) -> Result<ast::UnionField, ParseError> {
-        unimplemented!()
+        if !self.is_next_token_kind(&TokenKind::Ellipsis) {
+            return Err(self.parse_error(
+                ParseErrorScope::Field,
+                "Invalid union field: missing ellipsis",
+            ));
+        }
+        let start_pos = self.peek_token().unwrap().pos;
+        self.ptr += 1;
+
+        if !self.is_next_token_kind(&TokenKind::Keyword("on".to_string())) {
+            return Err(self.parse_error(
+                ParseErrorScope::Field,
+                "Invalid union field: missing 'on' keyword",
+            ));
+        }
+        self.ptr += 1;
+
+        let type_name = if let Some(Token {
+            kind: TokenKind::Keyword(_),
+            ..
+        }) = self.peek_token()
+        {
+            let type_name = self.peek_token().cloned().unwrap();
+            self.ptr += 1;
+            type_name
+        } else {
+            // Error correction: add empty keyword token to be able to autocomple on.
+            Token::new(
+                TokenKind::Keyword("".to_string()),
+                self.peek_previous_token().unwrap().end_pos(),
+                self.peek_token()
+                    .map(|next_token| next_token.pos)
+                    .unwrap_or(self.peek_previous_token().unwrap().end_pos())
+                    - self.peek_previous_token().unwrap().end_pos(),
+                "".to_string(),
+            )
+        };
+
+        let field_list = self.parse_fields_subobject()?;
+        let end_pos = field_list.end_pos;
+
+        Ok(ast::UnionField {
+            start_pos,
+            end_pos,
+            type_name,
+            field_list,
+        })
     }
 
     fn parse_arglist(
@@ -593,6 +639,35 @@ mod test {
         );
 
         assert_eq!(2, first_arg_value.params[1].value.as_list().elems.len());
+    }
+
+    #[test]
+    fn test_union() {
+        let query = parse_query("{ user { ... on Corporate { boss } } }");
+
+        assert_eq!(1, query.field_list.fields.len());
+        assert_eq!(
+            1,
+            query.field_list.fields[0]
+                .as_concrete_field()
+                .field_list
+                .as_ref()
+                .unwrap()
+                .fields
+                .len()
+        );
+        assert_eq!(
+            "Corporate".to_string(),
+            query.field_list.fields[0]
+                .as_concrete_field()
+                .field_list
+                .as_ref()
+                .unwrap()
+                .fields[0]
+                .as_union_field()
+                .type_name
+                .original
+        );
     }
 
     fn parse_query(raw: &str) -> Query {

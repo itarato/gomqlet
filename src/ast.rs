@@ -7,6 +7,7 @@ pub enum Root {
     Mutation(Mutation),
 }
 
+#[derive(Debug)]
 pub struct Query {
     pub start_pos: usize,
     pub end_pos: usize,
@@ -19,6 +20,7 @@ pub struct Mutation {
     pub field_list: FieldList,
 }
 
+#[derive(Debug)]
 pub struct FieldList {
     pub start_pos: usize,
     pub end_pos: usize,
@@ -35,6 +37,7 @@ impl FieldList {
     }
 }
 
+#[derive(Debug)]
 pub enum Field {
     Concrete(ConcreteField),
     Union(UnionField),
@@ -61,8 +64,16 @@ impl Field {
             _ => panic!("Expected to be a concrete field"),
         }
     }
+
+    pub fn as_union_field(&self) -> &UnionField {
+        match &self {
+            Field::Union(field) => field,
+            _ => panic!("Expected to be a concrete field"),
+        }
+    }
 }
 
+#[derive(Debug)]
 pub struct ConcreteField {
     pub start_pos: usize,
     pub end_pos: usize,
@@ -81,6 +92,7 @@ impl ConcreteField {
     }
 }
 
+#[derive(Debug)]
 pub struct UnionField {
     pub start_pos: usize,
     pub end_pos: usize,

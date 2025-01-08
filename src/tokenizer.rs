@@ -9,7 +9,7 @@ pub struct Token {
 }
 
 impl Token {
-    fn new(kind: TokenKind, pos: usize, len: usize, original: String) -> Token {
+    pub fn new(kind: TokenKind, pos: usize, len: usize, original: String) -> Token {
         Token {
             kind,
             pos,

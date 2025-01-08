@@ -106,7 +106,7 @@ impl Analyzer {
     ) -> AnalyzerResult {
         match &field {
             &ast::Field::Concrete(field) => self.find_pos_in_concrete_field(field, pos, scope),
-            &ast::Field::Union(field) => unimplemented!(),
+            &ast::Field::Union(field) => Ok(None),
         }
     }
 

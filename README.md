@@ -80,6 +80,7 @@ Analysis:
     - fieldset
     - fieldset emptiness
 - union types
+- offering field from various implementation of concrete types
 
 File browser:
 
