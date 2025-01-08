@@ -67,12 +67,18 @@ impl FileSelector {
             KeyboardInput::Key(13) => {
                 if self.selection_index == 0 {
                     self.folder.pop();
+                    self.selection_index = 0;
                 } else if self.selection_index == self.files.len() + 1 {
                     self.state_change_to_new_file_name_typing();
                 } else {
-                    return Some(Command::OpenFile(
-                        self.files[self.selection_index - 1].clone(),
-                    ));
+                    if self.files[self.selection_index - 1].is_dir() {
+                        self.folder = self.files[self.selection_index - 1].clone();
+                        self.selection_index = 0;
+                    } else {
+                        return Some(Command::OpenFile(
+                            self.files[self.selection_index - 1].clone(),
+                        ));
+                    }
                 }
             }
             _ => {}
@@ -104,12 +110,12 @@ impl FileSelector {
         None
     }
 
-    pub fn refresh_screen(&self) {
-        let files = FileSelector::files(&self.folder);
+    pub fn refresh_screen(&mut self) {
+        self.files = FileSelector::files(&self.folder);
 
         self.printer.print(
             &self.folder,
-            files,
+            &self.files,
             self.selection_index,
             &self.new_file_name,
         );

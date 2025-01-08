@@ -26,7 +26,7 @@ impl FileSelectorPrinter {
     pub fn print(
         &self,
         folder: &PathBuf,
-        file_paths: Vec<PathBuf>,
+        file_paths: &Vec<PathBuf>,
         selected_index: usize,
         new_file_name: &Option<String>,
     ) {
@@ -44,9 +44,9 @@ impl FileSelectorPrinter {
             .iter()
             .map(|e| {
                 if e.is_dir() {
-                    format!("+ {}", e.to_str().unwrap())
+                    format!("+ /{}/", e.file_name().unwrap().to_str().unwrap())
                 } else {
-                    format!("| {}", e.to_str().unwrap())
+                    format!("| {}", e.file_name().unwrap().to_str().unwrap())
                 }
             })
             .collect::<Vec<_>>();
@@ -61,7 +61,7 @@ impl FileSelectorPrinter {
                     file_name
                 )
             }
-            None => "Create new file".to_string(),
+            None => "[ Create new file ]".to_string(),
         };
         elems.push(last_line);
 
