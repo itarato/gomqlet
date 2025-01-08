@@ -5,6 +5,7 @@ use crate::{
     net_ops::NetOps,
     schema::{self, Type},
     tokenizer::Token,
+    util::Error,
 };
 
 #[derive(Debug, Clone)]
@@ -20,7 +21,7 @@ pub struct Suggestion {
     pub token: Option<Token>,
 }
 
-type AnalyzerResult = Result<Option<Suggestion>, String>;
+type AnalyzerResult = Result<Option<Suggestion>, Error>;
 
 pub struct Analyzer {
     schema: schema::Schema,
@@ -106,7 +107,7 @@ impl Analyzer {
                 if arglist.range_exclusive().contains(&pos) {
                     return scope
                         .field(field.name.original.clone())
-                        .ok_or(format!("Invalid field {}", field.name.original))
+                        .ok_or(format!("Invalid field {}", field.name.original).into())
                         .and_then(|field_def| {
                             self.find_pos_in_arglist(arglist, pos, &field_def.args)
                         });
@@ -198,7 +199,7 @@ impl Analyzer {
                     return self
                         .schema
                         .type_definition(enum_type_name)
-                        .ok_or(format!("Enum type {} not found", enum_type_name))
+                        .ok_or(format!("Enum type {} not found", enum_type_name).into())
                         .and_then(|enum_type| {
                             Ok(Some(Suggestion {
                                 elems: enum_type.field_names(&token.original),
@@ -213,10 +214,9 @@ impl Analyzer {
                 let value_type_name = match scope.skip_non_null() {
                     schema::TypeClass::Input(name) => name,
                     _ => {
-                        return Err(format!(
-                            "Exected input type for arg value. Got: {:?}",
-                            scope
-                        ))
+                        return Err(
+                            format!("Exected input type for arg value. Got: {:?}", scope).into(),
+                        )
                     }
                 };
                 // Get the schema type definition of the arg value's type.
@@ -232,7 +232,8 @@ impl Analyzer {
                         return Err(format!(
                             "Type {} is expected to be an input object",
                             &value_type_name
-                        ))
+                        )
+                        .into())
                     }
                 };
 
@@ -251,7 +252,8 @@ impl Analyzer {
                                 return Err(format!(
                                     "Exected list type for arg value. Got: {:?}",
                                     scope
-                                ))
+                                )
+                                .into())
                             }
                         };
 
@@ -264,7 +266,7 @@ impl Analyzer {
                     return self
                         .schema
                         .type_definition(enum_type_name)
-                        .ok_or(format!("Enum type {} not found", enum_type_name))
+                        .ok_or(format!("Enum type {} not found", enum_type_name).into())
                         .and_then(|enum_type| {
                             Ok(Some(Suggestion {
                                 elems: enum_type.field_names(""),

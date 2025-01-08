@@ -113,7 +113,7 @@ impl Editor {
                         self.previous_suggestion = ok.clone();
                         suggestions = ok;
                     }
-                    Err(err) => definition_error = Some(err),
+                    Err(err) => definition_error = Some(err.to_string()),
                 };
             }
             Err(err) => parse_error = Some(err),

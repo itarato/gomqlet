@@ -7,7 +7,11 @@ use std::{
 
 use serde_json::Value;
 
-use crate::{analyzer::SuggestionElem, net_ops::NetOps, util::fuzzy_match};
+use crate::{
+    analyzer::SuggestionElem,
+    net_ops::NetOps,
+    util::{fuzzy_match, Error},
+};
 
 #[derive(Debug)]
 pub enum TypeClass {
@@ -431,23 +435,26 @@ impl Schema {
             .collect()
     }
 
-    pub fn field_type(&self, type_definition: &Type, field_name: String) -> Result<&Type, String> {
+    pub fn field_type(&self, type_definition: &Type, field_name: String) -> Result<&Type, Error> {
         type_definition
             .field(field_name.clone())
-            .ok_or(format!("Field {} not found", field_name))
+            .ok_or(format!("Field {} not found", field_name).into())
             .and_then(|field_definition| {
                 field_definition
                     .field_type
                     // FIXME: I'm not sure about this one. Removing non-null wrapper is ok but list might not.
                     //        check if this lies for list types.
                     .underlying_type_name()
-                    .ok_or(format!("Field type of {} not found", field_name))
+                    .ok_or(format!("Field type of {} not found", field_name).into())
             })
             .and_then(|field_type_name| {
-                self.type_definition(&field_type_name).ok_or(format!(
-                    "Definition of type {} of field {} not found",
-                    field_type_name, field_name
-                ))
+                self.type_definition(&field_type_name).ok_or(
+                    format!(
+                        "Definition of type {} of field {} not found",
+                        field_type_name, field_name
+                    )
+                    .into(),
+                )
             })
     }
 }
