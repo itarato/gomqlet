@@ -67,7 +67,7 @@ pub struct Tokenizer;
 
 impl Tokenizer {
     pub fn tokenize_lines(source: &Vec<String>, record_whitespace: bool) -> Vec<Token> {
-        Tokenizer::tokenize(&source.clone().join("\n"), record_whitespace)
+        Tokenizer::tokenize(&source.join("\n"), record_whitespace)
     }
 
     pub fn tokenize(source: &str, record_whitespace: bool) -> Vec<Token> {
