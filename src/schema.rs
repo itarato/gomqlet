@@ -41,14 +41,14 @@ impl fmt::Display for TypeClass {
 }
 
 impl TypeClass {
-    fn underlying_type_name(&self) -> Option<String> {
+    fn underlying_type_name(&self) -> Option<&String> {
         match self {
-            TypeClass::Object(name) => Some(name.clone()),
-            TypeClass::Enum(name) => Some(name.clone()),
-            TypeClass::Interface(name) => Some(name.clone()),
-            TypeClass::Scalar(name) => Some(name.clone()),
-            TypeClass::Input(name) => Some(name.clone()),
-            TypeClass::Union(name) => Some(name.clone()),
+            TypeClass::Object(name) => Some(name),
+            TypeClass::Enum(name) => Some(name),
+            TypeClass::Interface(name) => Some(name),
+            TypeClass::Scalar(name) => Some(name),
+            TypeClass::Input(name) => Some(name),
+            TypeClass::Union(name) => Some(name),
             TypeClass::NonNull(inner) => inner.underlying_type_name(),
             TypeClass::List(inner) => inner.underlying_type_name(),
         }
@@ -448,7 +448,7 @@ impl Schema {
                     .ok_or(format!("Field type of {} not found", field_name).into())
             })
             .and_then(|field_type_name| {
-                self.type_definition(&field_type_name).ok_or(
+                self.type_definition(field_type_name).ok_or(
                     format!(
                         "Definition of type {} of field {} not found",
                         field_type_name, field_name

@@ -1,7 +1,26 @@
-use std::{
-    collections::HashMap,
-    io::{self, Read},
-};
+use std::io::{self, Read};
+
+const ESCAPE_COMBOS: &[(&[u8], KeyboardInput)] = &[
+    (&[27, 91, 65], KeyboardInput::Up),
+    (&[27, 91, 66], KeyboardInput::Down),
+    (&[27, 91, 67], KeyboardInput::Right),
+    (&[27, 91, 68], KeyboardInput::Left),
+    (&[27, 91, 72], KeyboardInput::Home),
+    (&[27, 91, 70], KeyboardInput::End),
+    (&[27, 91, 51, 126], KeyboardInput::Delete),
+    (&[27, 48], KeyboardInput::AltDigit(0)),
+    (&[27, 49], KeyboardInput::AltDigit(1)),
+    (&[27, 50], KeyboardInput::AltDigit(2)),
+    (&[27, 51], KeyboardInput::AltDigit(3)),
+    (&[27, 52], KeyboardInput::AltDigit(4)),
+    (&[27, 53], KeyboardInput::AltDigit(5)),
+    (&[27, 54], KeyboardInput::AltDigit(6)),
+    (&[27, 55], KeyboardInput::AltDigit(7)),
+    (&[27, 56], KeyboardInput::AltDigit(8)),
+    (&[27, 57], KeyboardInput::AltDigit(9)),
+    (&[27, 102], KeyboardInput::AltF),
+    (&[27, 115], KeyboardInput::AltS),
+];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyboardInput {
@@ -42,27 +61,6 @@ impl StdinReader {
     }
 
     pub fn parse_stdin_bytes(buf: &[u8], len: usize) -> Vec<KeyboardInput> {
-        let escape_combos: HashMap<Vec<u8>, KeyboardInput> = HashMap::from([
-            (vec![27, 91, 65], KeyboardInput::Up),
-            (vec![27, 91, 66], KeyboardInput::Down),
-            (vec![27, 91, 67], KeyboardInput::Right),
-            (vec![27, 91, 68], KeyboardInput::Left),
-            (vec![27, 91, 72], KeyboardInput::Home),
-            (vec![27, 91, 70], KeyboardInput::End),
-            (vec![27, 91, 51, 126], KeyboardInput::Delete),
-            (vec![27, 48], KeyboardInput::AltDigit(0)),
-            (vec![27, 49], KeyboardInput::AltDigit(1)),
-            (vec![27, 50], KeyboardInput::AltDigit(2)),
-            (vec![27, 51], KeyboardInput::AltDigit(3)),
-            (vec![27, 52], KeyboardInput::AltDigit(4)),
-            (vec![27, 53], KeyboardInput::AltDigit(5)),
-            (vec![27, 54], KeyboardInput::AltDigit(6)),
-            (vec![27, 55], KeyboardInput::AltDigit(7)),
-            (vec![27, 56], KeyboardInput::AltDigit(8)),
-            (vec![27, 57], KeyboardInput::AltDigit(9)),
-            (vec![27, 102], KeyboardInput::AltF),
-            (vec![27, 115], KeyboardInput::AltS),
-        ]);
         let mut i = 0usize;
         let mut out = vec![];
 
@@ -70,9 +68,9 @@ impl StdinReader {
 
         while i < len {
             if buf[i] == 27 {
-                for (seq, ki) in &escape_combos {
+                for (seq, ki) in ESCAPE_COMBOS {
                     if i + seq.len() <= len {
-                        if seq.as_slice() == &buf[i..i + seq.len()] {
+                        if *seq == &buf[i..i + seq.len()] {
                             out.push(ki.clone());
                             i += seq.len();
                             break;
