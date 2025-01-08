@@ -149,7 +149,7 @@ impl Tokenizer {
             *pos += 1;
             return Token::new(
                 TokenKind::Invalid("Invalid ellipsis lenght".to_string()),
-                *pos,
+                *pos - 1,
                 1,
                 chars[*pos].to_string(),
             );
@@ -159,14 +159,14 @@ impl Tokenizer {
             *pos += 1;
             return Token::new(
                 TokenKind::Invalid("Invalid ellipsis chars".to_string()),
-                *pos,
+                *pos - 1,
                 1,
                 chars[*pos].to_string(),
             );
         }
 
         *pos += 3;
-        return Token::new(TokenKind::Ellipsis, *pos, 3, "...".to_string());
+        return Token::new(TokenKind::Ellipsis, *pos - 3, 3, "...".to_string());
     }
 
     fn consume_keyword(chars: &Vec<char>, pos: &mut usize) -> Token {

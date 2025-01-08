@@ -668,6 +668,30 @@ mod test {
                 .type_name
                 .original
         );
+
+        assert_eq!(
+            9,
+            query.field_list.fields[0]
+                .as_concrete_field()
+                .field_list
+                .as_ref()
+                .unwrap()
+                .fields[0]
+                .as_union_field()
+                .start_pos
+        );
+
+        assert_eq!(
+            34,
+            query.field_list.fields[0]
+                .as_concrete_field()
+                .field_list
+                .as_ref()
+                .unwrap()
+                .fields[0]
+                .as_union_field()
+                .end_pos
+        );
     }
 
     fn parse_query(raw: &str) -> Query {

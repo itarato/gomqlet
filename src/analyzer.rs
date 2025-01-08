@@ -84,14 +84,13 @@ impl Analyzer {
         assert!(field_list.range_exclusive().contains(&pos));
 
         for field in &field_list.fields {
-            if !field.range_inclusive().contains(&pos) {
-                continue;
+            if field.range_inclusive().contains(&pos) {
+                return self.find_pos_in_field(field, pos, scope);
             }
-
-            return self.find_pos_in_field(field, pos, scope);
         }
 
         // In query but not on fields. -> can offer fields.
+        trace!("Suggestion on all fields of a field list");
         Ok(Some(Suggestion {
             elems: scope.field_names(""),
             token: None,
@@ -106,8 +105,42 @@ impl Analyzer {
     ) -> AnalyzerResult {
         match &field {
             &ast::Field::Concrete(field) => self.find_pos_in_concrete_field(field, pos, scope),
-            &ast::Field::Union(field) => Ok(None),
+            &ast::Field::Union(field) => self.find_pos_in_union_field(field, pos, scope),
         }
+    }
+
+    fn find_pos_in_union_field(
+        &self,
+        field: &ast::UnionField,
+        pos: usize,
+        scope: &schema::Type,
+    ) -> AnalyzerResult {
+        if field.type_name.range_inclusive().contains(&pos) {
+            // Autocomplete for the union type.
+            match &scope {
+                &schema::Type::Union(_) => {
+                    let elems = scope.field_names(&field.type_name.original);
+                    trace!("Suggestion on a union type");
+                    return Ok(Some(Suggestion {
+                        elems,
+                        token: Some(field.type_name.clone()),
+                    }));
+                }
+                _ => return Err("Expected union type. Likely not a valid union scope.".into()),
+            }
+        }
+
+        if field.field_list.range_exclusive().contains(&pos) {
+            let union_type_name = &field.type_name.original;
+            let inner_scope = self
+                .schema
+                .type_definition(union_type_name)
+                .ok_or(format!("Missing union type: {}", union_type_name))?;
+
+            return self.find_pos_in_field_list(&field.field_list, pos, inner_scope);
+        }
+
+        Ok(None)
     }
 
     fn find_pos_in_concrete_field(
@@ -119,6 +152,7 @@ impl Analyzer {
         // On field.
         if field.name.range_inclusive().contains(&pos) {
             // On the field name.
+            trace!("Suggestion on a concrete field name");
             return Ok(Some(Suggestion {
                 elems: scope.field_names(&field.name.original),
                 token: Some(field.name.clone()),
@@ -169,15 +203,12 @@ impl Analyzer {
 
             if arg.key.range_inclusive().contains(&pos) {
                 // On arg key.
-                trace!("On key: {}", arg.key.original);
+                trace!("Suggestion on arglist key: {}", arg.key.original);
                 return Ok(Some(Suggestion {
                     elems: scope.arg_names(&arg.key.original),
                     token: Some(arg.key.clone()),
                 }));
             } else if arg.value.range_inclusive().contains(&pos) {
-                // On arg value.
-                trace!("On arg value: {:?}", arg.value);
-
                 // We are in the <arg-name>: ______ scope.
                 //                           ^^^^^^
                 // Get the current arg definition.
@@ -193,7 +224,7 @@ impl Analyzer {
         }
 
         // In arglist -> offer key.
-        trace!("On arglist.");
+        trace!("Suggestion on all arglist fields");
         Ok(Some(Suggestion {
             elems: scope.arg_names(&String::new()),
             token: None,
@@ -214,6 +245,7 @@ impl Analyzer {
                         .type_definition(enum_type_name)
                         .ok_or(format!("Enum type {} not found", enum_type_name).into())
                         .and_then(|enum_type| {
+                            trace!("Suggestion on enum arglist value");
                             Ok(Some(Suggestion {
                                 elems: enum_type.field_names(&token.original),
                                 token: Some(token.clone()),
@@ -281,6 +313,7 @@ impl Analyzer {
                         .type_definition(enum_type_name)
                         .ok_or(format!("Enum type {} not found", enum_type_name).into())
                         .and_then(|enum_type| {
+                            trace!("Suggestion on all enum options of an arglist value");
                             Ok(Some(Suggestion {
                                 elems: enum_type.field_names(""),
                                 token: None,
