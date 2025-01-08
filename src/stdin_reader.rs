@@ -64,7 +64,7 @@ impl StdinReader {
         let mut i = 0usize;
         let mut out = vec![];
 
-        debug!("{:?}", &buf[0..len]);
+        trace!("Input: {:?}", &buf[0..len]);
 
         while i < len {
             if buf[i] == 27 {

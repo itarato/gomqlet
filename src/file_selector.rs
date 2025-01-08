@@ -38,7 +38,7 @@ impl FileSelector {
     }
 
     fn elem_len(&self) -> usize {
-        self.files.len() + 1
+        self.files.len() + 2 // files + create new + parent dir
     }
 
     pub fn update(&mut self, input: KeyboardInput) -> Option<Command> {
@@ -57,16 +57,6 @@ impl FileSelector {
 
     fn update_selection_state(&mut self, input: KeyboardInput) -> Option<Command> {
         match input {
-            KeyboardInput::AltDigit(value) => {
-                self.selection_index = value as usize % self.elem_len();
-                if self.selection_index == 0 {
-                    self.state_change_to_new_file_name_typing();
-                } else {
-                    return Some(Command::OpenFile(
-                        self.files[self.selection_index - 1].clone(),
-                    ));
-                }
-            }
             KeyboardInput::Up => {
                 self.selection_index =
                     (self.selection_index + self.elem_len() - 1) % self.elem_len();
@@ -76,6 +66,8 @@ impl FileSelector {
             }
             KeyboardInput::Key(13) => {
                 if self.selection_index == 0 {
+                    self.folder.pop();
+                } else if self.selection_index == self.files.len() + 1 {
                     self.state_change_to_new_file_name_typing();
                 } else {
                     return Some(Command::OpenFile(
@@ -137,17 +129,13 @@ impl FileSelector {
         fs::read_dir(folder)
             .expect("Cannot read source folder")
             .filter_map(|dir_entry_result| dir_entry_result.ok())
-            .filter(|dir_entry| {
-                dir_entry
-                    .file_type()
-                    .map(|ty| ty.is_file())
-                    .unwrap_or(false)
-            })
             .map(|dir_entry| dir_entry.path())
             .filter(|path| {
-                path.extension()
-                    .map(|ext| ext == "graphql")
-                    .unwrap_or(false)
+                path.is_dir()
+                    || path
+                        .extension()
+                        .map(|ext| ext == "graphql")
+                        .unwrap_or(false)
             })
             .collect()
     }

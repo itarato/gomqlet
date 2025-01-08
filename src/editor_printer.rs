@@ -83,8 +83,6 @@ impl EditorPrinter {
     }
 
     fn resolve_vscroll(&mut self, cursor_y: usize) {
-        debug!("WAS vscroll={} cursor_y={}", self.vscroll, cursor_y);
-
         let global_cursor_y = cursor_y as i32 - self.vscroll as i32;
 
         if global_cursor_y < 0 {
@@ -92,7 +90,6 @@ impl EditorPrinter {
         } else if global_cursor_y >= self.terminal_height() as i32 {
             self.vscroll += global_cursor_y as usize - self.terminal_height() + 1;
         }
-        debug!("BECAME vscroll={} cursor_y={}", self.vscroll, cursor_y);
     }
 
     fn print_analyzer_result_suggestions(

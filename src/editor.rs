@@ -72,7 +72,7 @@ impl Editor {
             }
             KeyboardInput::CtrlW => self.content.borrow_mut().delete_word(),
             _ => {
-                debug!("Unrecognized editor input: {:?}", input);
+                warn!("Unrecognized editor input: {:?}", input);
             }
         }
 

@@ -5,9 +5,13 @@ use std::{
 
 /*
 
-| /home/path/other
-+-- few
-+-- few
+/home/folder/foo
+| fd.gql
++ dir1
+| fewfew
+| fe
++ fee
+
 */
 
 use crate::terminal_handler::TerminalHandler;
@@ -32,16 +36,24 @@ impl FileSelectorPrinter {
         TerminalHandler::append_cursor_location(&mut buf, 0, 0);
 
         buf.push_str(&format!(
-            "| {}\n\r",
+            "{}\n\r",
             folder.to_str().expect("Failed stringifying path")
         ));
 
         let mut elems = file_paths
             .iter()
-            .map(|e| e.to_str().unwrap())
+            .map(|e| {
+                if e.is_dir() {
+                    format!("+ {}", e.to_str().unwrap())
+                } else {
+                    format!("| {}", e.to_str().unwrap())
+                }
+            })
             .collect::<Vec<_>>();
 
-        let first_line = match new_file_name {
+        elems.insert(0, "..".to_string());
+
+        let last_line = match new_file_name {
             Some(file_name) => {
                 format!(
                     "New file: {}/{}.graphql",
@@ -51,14 +63,15 @@ impl FileSelectorPrinter {
             }
             None => "Create new file".to_string(),
         };
-        elems.insert(0, &first_line);
+        elems.push(last_line);
 
         for (i, elem) in elems.iter().enumerate() {
             if selected_index == i {
-                buf.push_str(&format!("+-- \x1B[44m#{}: {}\x1B[0m", i, elem));
+                buf.push_str(&format!("\x1B[44m{}\x1B[0m", elem));
             } else {
-                buf.push_str(&format!("+-- \x1B[34m#{}: {}\x1B[0m", i, elem));
+                buf.push_str(&format!("\x1B[34m{}\x1B[0m", elem));
             }
+
             buf.push_str("\n\r");
         }
 

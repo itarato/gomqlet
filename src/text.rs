@@ -93,7 +93,7 @@ impl Text {
 
     pub fn insert_visible_char(&mut self, ch: char) {
         if (ch as u8) < 32 || (ch as u8) > 126 {
-            debug!("Command character received: {}", ch as u8);
+            trace!("Command character received: {}", ch as u8);
             return;
         }
 
@@ -305,8 +305,6 @@ impl Text {
             i += self.lines[y].len() + 1 /* new line from tokenizer */;
             y += 1;
         }
-
-        debug!("pos={} i={} y={}", pos, i, y);
 
         CoordUsize { x: pos - i, y }
     }
