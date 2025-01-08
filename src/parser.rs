@@ -73,6 +73,24 @@ impl Parser {
     }
 
     fn parse_field(&mut self) -> Result<ast::Field, ParseError> {
+        match self.peek_token() {
+            Some(Token {
+                kind: TokenKind::Keyword(_),
+                ..
+            }) => self
+                .parse_concrete_field()
+                .map(|field| ast::Field::Concrete(field)),
+            Some(Token {
+                kind: TokenKind::Ellipsis,
+                ..
+            }) => self
+                .parse_union_field()
+                .map(|field| ast::Field::Union(field)),
+            _ => Err(self.parse_error(ParseErrorScope::Field, "Invalid field start")),
+        }
+    }
+
+    fn parse_concrete_field(&mut self) -> Result<ast::ConcreteField, ParseError> {
         let name_token = if let Some(Token {
             kind: TokenKind::Keyword(_),
             ..
@@ -102,13 +120,17 @@ impl Parser {
             None
         };
 
-        Ok(ast::Field {
+        Ok(ast::ConcreteField {
             start_pos: name_token.pos,
             end_pos,
             name: name_token,
             arglist,
             field_list,
         })
+    }
+
+    fn parse_union_field(&mut self) -> Result<ast::UnionField, ParseError> {
+        unimplemented!()
     }
 
     fn parse_arglist(
@@ -403,12 +425,18 @@ mod test {
     fn test_plan_fields() {
         let query = parse_query("{ user company task }");
         assert_eq!(3, query.field_list.fields.len());
-        assert_eq!("user".to_string(), query.field_list.fields[0].name.original);
+        assert_eq!(
+            "user".to_string(),
+            query.field_list.fields[0].as_concrete_field().name.original
+        );
         assert_eq!(
             "company".to_string(),
-            query.field_list.fields[1].name.original
+            query.field_list.fields[1].as_concrete_field().name.original
         );
-        assert_eq!("task".to_string(), query.field_list.fields[2].name.original);
+        assert_eq!(
+            "task".to_string(),
+            query.field_list.fields[2].as_concrete_field().name.original
+        );
     }
 
     #[test]
@@ -418,6 +446,7 @@ mod test {
         assert_eq!(
             2,
             query.field_list.fields[1]
+                .as_concrete_field()
                 .field_list
                 .as_ref()
                 .unwrap()
@@ -434,7 +463,12 @@ mod test {
 
         assert_eq!(
             "id".to_string(),
-            query.field_list.fields[0].arglist.as_ref().unwrap().params[0]
+            query.field_list.fields[0]
+                .as_concrete_field()
+                .arglist
+                .as_ref()
+                .unwrap()
+                .params[0]
                 .key
                 .original,
         );
@@ -448,6 +482,7 @@ mod test {
         assert_eq!(
             1,
             query.field_list.fields[0]
+                .as_concrete_field()
                 .arglist
                 .as_ref()
                 .unwrap()
@@ -456,7 +491,12 @@ mod test {
         );
         assert_eq!(
             3,
-            query.field_list.fields[0].arglist.as_ref().unwrap().params[0]
+            query.field_list.fields[0]
+                .as_concrete_field()
+                .arglist
+                .as_ref()
+                .unwrap()
+                .params[0]
                 .value
                 .as_list()
                 .elems
@@ -464,7 +504,12 @@ mod test {
         );
         assert_eq!(
             "11".to_string(),
-            query.field_list.fields[0].arglist.as_ref().unwrap().params[0]
+            query.field_list.fields[0]
+                .as_concrete_field()
+                .arglist
+                .as_ref()
+                .unwrap()
+                .params[0]
                 .value
                 .as_list()
                 .elems[0]
@@ -481,6 +526,7 @@ mod test {
         assert_eq!(
             0,
             query.field_list.fields[0]
+                .as_concrete_field()
                 .arglist
                 .as_ref()
                 .unwrap()
@@ -497,6 +543,7 @@ mod test {
         assert_eq!(
             1,
             query.field_list.fields[0]
+                .as_concrete_field()
                 .arglist
                 .as_ref()
                 .unwrap()
@@ -513,6 +560,7 @@ mod test {
         assert_eq!(
             1,
             query.field_list.fields[0]
+                .as_concrete_field()
                 .arglist
                 .as_ref()
                 .unwrap()
@@ -529,7 +577,11 @@ mod test {
 
         assert_eq!(1, mutation.field_list.fields.len());
 
-        let args = mutation.field_list.fields[0].arglist.as_ref().unwrap();
+        let args = mutation.field_list.fields[0]
+            .as_concrete_field()
+            .arglist
+            .as_ref()
+            .unwrap();
         assert_eq!(1, args.params.len());
 
         let first_arg_value = args.params.get(0).unwrap().value.as_object();

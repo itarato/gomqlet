@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::{
     ast::{self},
     net_ops::NetOps,
-    schema::{self, Type},
+    schema::{self, Field, Type},
     tokenizer::Token,
     util::Error,
 };
@@ -84,56 +84,69 @@ impl Analyzer {
         assert!(field_list.range_exclusive().contains(&pos));
 
         for field in &field_list.fields {
-            // Not there yet.
-            if pos > field.end_pos {
+            if !field.range_inclusive().contains(&pos) {
                 continue;
             }
 
-            // Too late.
-            if pos < field.start_pos {
-                break;
-            }
-
-            // On field.
-            if field.name.range_inclusive().contains(&pos) {
-                // On the field name.
-                return Ok(Some(Suggestion {
-                    elems: scope.field_names(&field.name.original),
-                    token: Some(field.name.clone()),
-                }));
-            }
-
-            if let Some(arglist) = &field.arglist {
-                if arglist.range_exclusive().contains(&pos) {
-                    return scope
-                        .field(&field.name.original)
-                        .ok_or(format!("Invalid field {}", field.name.original).into())
-                        .and_then(|field_def| {
-                            self.find_pos_in_arglist(arglist, pos, &field_def.args)
-                        });
-                }
-            }
-
-            if let Some(field_list) = &field.field_list {
-                if field_list.range_exclusive().contains(&pos) {
-                    return self
-                        .schema
-                        .field_type(scope, &field.name.original)
-                        .and_then(|subfield_type_definition| {
-                            self.find_pos_in_field_list(field_list, pos, subfield_type_definition)
-                        });
-                }
-            }
-
-            // Between the gaps (not on key [or key's fieldset]) but on the key+fieldset frame.
-            return Ok(None);
+            return self.find_pos_in_field(field, pos, scope);
         }
 
-        // In query but not on fields. -> AC can offer fields.
+        // In query but not on fields. -> can offer fields.
         Ok(Some(Suggestion {
             elems: scope.field_names(""),
             token: None,
         }))
+    }
+
+    fn find_pos_in_field(
+        &self,
+        field: &ast::Field,
+        pos: usize,
+        scope: &schema::Type,
+    ) -> AnalyzerResult {
+        match &field {
+            &ast::Field::Concrete(field) => self.find_pos_in_concrete_field(field, pos, scope),
+            &ast::Field::Union(field) => unimplemented!(),
+        }
+    }
+
+    fn find_pos_in_concrete_field(
+        &self,
+        field: &ast::ConcreteField,
+        pos: usize,
+        scope: &schema::Type,
+    ) -> AnalyzerResult {
+        // On field.
+        if field.name.range_inclusive().contains(&pos) {
+            // On the field name.
+            return Ok(Some(Suggestion {
+                elems: scope.field_names(&field.name.original),
+                token: Some(field.name.clone()),
+            }));
+        }
+
+        if let Some(arglist) = &field.arglist {
+            if arglist.range_exclusive().contains(&pos) {
+                return scope
+                    .field(&field.name.original)
+                    .ok_or(format!("Invalid field {}", field.name.original).into())
+                    .and_then(|field_def| self.find_pos_in_arglist(arglist, pos, &field_def.args));
+            }
+        }
+
+        if let Some(field_list) = &field.field_list {
+            if field_list.range_exclusive().contains(&pos) {
+                return self
+                    .schema
+                    .field_type(scope, &field.name.original)
+                    .and_then(|subfield_type_definition| {
+                        self.find_pos_in_field_list(field_list, pos, subfield_type_definition)
+                    });
+            }
+        }
+
+        // Between the gaps (not on key [or key's fieldset]) but on the key+fieldset frame.
+        return Ok(None);
     }
 
     fn find_pos_in_arglist(
