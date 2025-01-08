@@ -216,11 +216,18 @@ pub struct EnumType {
     elems: Vec<String>,
 }
 
+pub struct UnionType {
+    name: String,
+    // This has the assumption that all types are Object type.
+    possible_types: Vec<String>,
+}
+
 pub enum Type {
     Object(ObjectType),
     Interface(ObjectType),
     InputObject(InputObjectType),
     Enum(EnumType),
+    Union(UnionType),
 }
 
 impl Type {
@@ -269,6 +276,24 @@ impl Type {
                     .collect();
 
                 Some(Type::Enum(EnumType { name, elems }))
+            }
+            "UNION" => {
+                let possible_types = object["possibleTypes"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|value| {
+                        value.as_object().unwrap()["name"]
+                            .as_str()
+                            .unwrap()
+                            .to_string()
+                    })
+                    .collect();
+
+                Some(Type::Union(UnionType {
+                    name,
+                    possible_types,
+                }))
             }
             _ => None,
         }
@@ -322,6 +347,21 @@ impl Type {
                     }
                 })
                 .collect(),
+            Type::Union(union_type) => union_type
+                .possible_types
+                .iter()
+                .filter_map(|type_name| {
+                    if let Some(fuzzy_match_positions) = fuzzy_match(&type_name, prefix) {
+                        Some(SuggestionElem {
+                            name: type_name.clone(),
+                            kind: "Object".to_string(),
+                            fuzzy_match_positions,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
         }
     }
 
@@ -337,6 +377,7 @@ impl Type {
             }
             Type::InputObject(_) => None,
             Type::Enum(_) => None,
+            Type::Union(_) => None,
         }
     }
 }
@@ -415,6 +456,11 @@ impl Schema {
                 }
                 Type::Enum(enum_type) => {
                     if &enum_type.name == name {
+                        return Some(ty);
+                    }
+                }
+                Type::Union(union_type) => {
+                    if &union_type.name == name {
                         return Some(ty);
                     }
                 }
