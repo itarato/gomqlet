@@ -78,7 +78,7 @@ impl Parser {
             ..
         }) = self.peek_token()
         {
-            self.peek_token_cloned().unwrap()
+            self.peek_token().cloned().unwrap()
         } else {
             return Err(self.parse_error(ParseErrorScope::Field, "Missing field name"));
         };
@@ -133,7 +133,7 @@ impl Parser {
                 ..
             }) = self.peek_token()
             {
-                self.peek_token_cloned().unwrap()
+                self.peek_token().cloned().unwrap()
             } else {
                 return Err(self.parse_error(ParseErrorScope::ArgList, "Missing keyword"));
             };
@@ -188,7 +188,7 @@ impl Parser {
         &mut self,
         close_token_kind: &TokenKind,
     ) -> Result<ast::ParamValue, ParseError> {
-        let token = self.peek_token_cloned();
+        let token = self.peek_token().cloned();
         match token {
             Some(Token {
                 kind: TokenKind::Number(_),
@@ -317,7 +317,7 @@ impl Parser {
 
     fn parse_error(&self, scope: ParseErrorScope, message: &str) -> ParseError {
         ParseError {
-            token: self.peek_token_cloned(),
+            token: self.peek_token().cloned(),
             scope,
             message: message.into(),
         }
@@ -341,10 +341,6 @@ impl Parser {
 
     fn peek_token(&self) -> Option<&Token> {
         self.tokens.get(self.ptr)
-    }
-
-    fn peek_token_cloned(&self) -> Option<Token> {
-        self.peek_token().map(|token| token.clone())
     }
 
     fn is_next_keyword(&self, value: &str) -> bool {
