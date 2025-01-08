@@ -71,7 +71,7 @@ Analysis:
 
 File browser:
 
-- 
+- folder walking
 
 GraphQL:
 

@@ -29,18 +29,14 @@ impl NetOps {
 
     pub fn execute_graphql_operation(&self, query: &str) {
         let query = query.replace('"', "\\\"");
-        let mut response = self.raw_execute_graphql_operation(&query);
-
-        let mut response_body = String::new();
-        response.read_to_string(&mut response_body).unwrap();
-
-        let json: Value = serde_json::from_str(&response_body).unwrap();
+        let response = self.raw_execute_graphql_operation(&query);
+        let json: Value = serde_json::from_reader(response).unwrap();
 
         info!("\x1B[95mResponse: \x1B[93m{:#?}\x1B[0m", json);
     }
 
     fn raw_execute_graphql_operation(&self, query: &str) -> Response {
-        let mut request = self.client.post(self.url.clone());
+        let mut request = self.client.post(&self.url);
 
         for [key, value] in &self.headers {
             request = request.header(key, value);

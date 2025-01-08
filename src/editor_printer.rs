@@ -28,7 +28,7 @@ impl EditorPrinter {
     pub fn print(
         &mut self,
         tokens: Vec<Token>,
-        cursor: CoordUsize,
+        cursor: &CoordUsize,
         suggestions: Option<Suggestion>,
         parse_error: Option<ParseError>,
         definition_error: Option<String>,

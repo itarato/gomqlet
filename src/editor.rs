@@ -90,7 +90,7 @@ impl Editor {
 
     pub fn refresh_screen(&mut self) {
         let tokens = self.build_tokens();
-        let tokens_without_whitecpace = tokens
+        let tokens_without_whitespace = tokens
             .clone()
             .into_iter()
             .filter(|token| match token.kind {
@@ -103,7 +103,7 @@ impl Editor {
         let mut parse_error = None;
         let mut suggestions = None;
         let mut definition_error = None;
-        match parser::Parser::new(tokens_without_whitecpace).parse() {
+        match parser::Parser::new(tokens_without_whitespace).parse() {
             Ok(root) => {
                 match self.analyzer.analyze(
                     root,
@@ -121,7 +121,7 @@ impl Editor {
 
         self.printer.print(
             tokens,
-            self.content.borrow().cursor.clone(),
+            &self.content.borrow().cursor,
             suggestions,
             parse_error,
             definition_error,
