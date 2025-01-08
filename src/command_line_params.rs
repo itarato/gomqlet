@@ -29,7 +29,7 @@ impl CommandLineParams {
 
     pub fn source_folder(&self) -> PathBuf {
         if let Some(ref source_folder) = self.source_folder {
-            PathBuf::from(source_folder)
+            fs::canonicalize(PathBuf::from(source_folder)).expect("Failed obtaining absolute path")
         } else if let Some(ref source_file) = self.source_file {
             let mut path = fs::canonicalize(PathBuf::from(source_file))
                 .expect("Failed to get path of source file");

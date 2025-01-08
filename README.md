@@ -4,6 +4,8 @@ Toy graphql executor project.
 
 ![Screenshot](./misc/screenshot.png)
 
+![Screenshot](./misc/screenshot2.png)
+
 Features:
 
 - GraphQL query / mutation editor
@@ -15,11 +17,13 @@ Features:
 - file browser
 - query chaining (with result insertion)
 
+
 ## Use
 
 ```bash
 cargo run -- -h
 ```
+
 
 ### Bindings
 
@@ -28,6 +32,7 @@ cargo run -- -h
 - `CTRL-C` / `CTRL-D`: quit application
 - `ALT-F` / `CTRL-F`: file browser
 - `ALT-S`: save file
+
 
 ### Magic tokens
 
@@ -38,6 +43,12 @@ Types:
 - Query chaining: `query::FILE_NAME::JSON_PATH` (example: `<query::users.graphql::$.data.users.edges[0].node.name>`)
 - Random string: `random_string::LENGTH` (example: `<random_string::10>`)
 - Random integer: `random_integer::MIN::MAX` (example: `<random_integer::0::100>`)
+
+
+### File browser
+
+Only `.graphql` file types (text/plain) can be opened.
+
 
 ## Todo
 
@@ -71,7 +82,7 @@ Analysis:
 
 File browser:
 
-- folder walking
+- 
 
 GraphQL:
 
