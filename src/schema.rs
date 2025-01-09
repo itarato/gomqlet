@@ -207,9 +207,65 @@ pub struct ObjectType {
     possible_types: Vec<String>,
 }
 
+impl ObjectType {
+    pub fn field_names(&self, prefix: &str) -> Vec<SuggestionElem> {
+        self.fields
+            .iter()
+            .filter_map(|field| {
+                if let Some(fuzzy_match_positions) = fuzzy_match(&field.name, prefix) {
+                    Some(SuggestionElem {
+                        name: field.name.clone(),
+                        kind: format!("{}", field.field_type),
+                        fuzzy_match_positions,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn possible_type_names(&self, prefix: &str) -> Vec<SuggestionElem> {
+        self.possible_types
+            .iter()
+            .filter_map(|type_name| {
+                if let Some(fuzzy_match_positions) = fuzzy_match(&type_name, prefix) {
+                    Some(SuggestionElem {
+                        name: type_name.clone(),
+                        kind: "Object".to_string(),
+                        fuzzy_match_positions,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+}
+
 pub struct InputObjectType {
     pub name: String,
     pub args: ArgList,
+}
+
+impl InputObjectType {
+    pub fn field_names(&self, prefix: &str) -> Vec<SuggestionElem> {
+        self.args
+            .elems
+            .iter()
+            .filter_map(|arg| {
+                if let Some(fuzzy_match_positions) = fuzzy_match(&arg.name, prefix) {
+                    Some(SuggestionElem {
+                        name: arg.name.clone(),
+                        kind: format!("{}", arg.arg_type),
+                        fuzzy_match_positions,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 pub struct EnumType {
@@ -217,10 +273,48 @@ pub struct EnumType {
     elems: Vec<String>,
 }
 
+impl EnumType {
+    pub fn field_names(&self, prefix: &str) -> Vec<SuggestionElem> {
+        self.elems
+            .iter()
+            .filter_map(|enum_value| {
+                if let Some(fuzzy_match_positions) = fuzzy_match(&enum_value, prefix) {
+                    Some(SuggestionElem {
+                        name: enum_value.clone(),
+                        kind: "Enum".to_string(),
+                        fuzzy_match_positions,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+}
+
 pub struct UnionType {
     name: String,
     // This has the assumption that all types are Object type.
     possible_types: Vec<String>,
+}
+
+impl UnionType {
+    pub fn possible_type_names(&self, prefix: &str) -> Vec<SuggestionElem> {
+        self.possible_types
+            .iter()
+            .filter_map(|type_name| {
+                if let Some(fuzzy_match_positions) = fuzzy_match(&type_name, prefix) {
+                    Some(SuggestionElem {
+                        name: type_name.clone(),
+                        kind: "Object".to_string(),
+                        fuzzy_match_positions,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 pub enum Type {
@@ -321,72 +415,6 @@ impl Type {
                 }))
             }
             _ => None,
-        }
-    }
-
-    pub fn field_names(&self, prefix: &str) -> Vec<SuggestionElem> {
-        match self {
-            Type::Object(object_type) | Type::Interface(object_type) => object_type
-                .fields
-                .iter()
-                .filter_map(|field| {
-                    if let Some(fuzzy_match_positions) = fuzzy_match(&field.name, prefix) {
-                        Some(SuggestionElem {
-                            name: field.name.clone(),
-                            kind: format!("{}", field.field_type),
-                            fuzzy_match_positions,
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-            Type::InputObject(input_object) => input_object
-                .args
-                .elems
-                .iter()
-                .filter_map(|arg| {
-                    if let Some(fuzzy_match_positions) = fuzzy_match(&arg.name, prefix) {
-                        Some(SuggestionElem {
-                            name: arg.name.clone(),
-                            kind: format!("{}", arg.arg_type),
-                            fuzzy_match_positions,
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-            Type::Enum(enum_type) => enum_type
-                .elems
-                .iter()
-                .filter_map(|enum_value| {
-                    if let Some(fuzzy_match_positions) = fuzzy_match(&enum_value, prefix) {
-                        Some(SuggestionElem {
-                            name: enum_value.clone(),
-                            kind: "Enum".to_string(),
-                            fuzzy_match_positions,
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-            Type::Union(union_type) => union_type
-                .possible_types
-                .iter()
-                .filter_map(|type_name| {
-                    if let Some(fuzzy_match_positions) = fuzzy_match(&type_name, prefix) {
-                        Some(SuggestionElem {
-                            name: type_name.clone(),
-                            kind: "Object".to_string(),
-                            fuzzy_match_positions,
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
         }
     }
 

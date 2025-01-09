@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::{
     ast::{self},
     net_ops::NetOps,
-    schema::{self, Field, Type},
+    schema::{self, Type},
     tokenizer::Token,
     util::Error,
 };
@@ -91,10 +91,10 @@ impl Analyzer {
 
         // In query but not on fields. -> can offer fields.
         match scope {
-            &schema::Type::Object(_) | &schema::Type::Interface(_) => {
+            &schema::Type::Object(ref inner_type) | &schema::Type::Interface(ref inner_type) => {
                 trace!("Suggestion on all fields of a field list");
                 Ok(Some(Suggestion {
-                    elems: scope.field_names(""),
+                    elems: inner_type.field_names(""),
                     token: None,
                 }))
             }
@@ -122,17 +122,20 @@ impl Analyzer {
     ) -> AnalyzerResult {
         if field.type_name.range_inclusive().contains(&pos) {
             // Autocomplete for the union type.
-            match &scope {
-                &schema::Type::Union(_) => {
-                    let elems = scope.field_names(&field.type_name.original);
-                    trace!("Suggestion on a union type");
-                    return Ok(Some(Suggestion {
-                        elems,
-                        token: Some(field.type_name.clone()),
-                    }));
+            let elems = match &scope {
+                &schema::Type::Union(union_type) => {
+                    union_type.possible_type_names(&field.type_name.original)
+                }
+                &schema::Type::Object(inner_type) | &schema::Type::Interface(inner_type) => {
+                    inner_type.possible_type_names(&field.type_name.original)
                 }
                 _ => return Err("Expected union type. Likely not a valid union scope.".into()),
-            }
+            };
+            trace!("Suggestion on a union type");
+            return Ok(Some(Suggestion {
+                elems,
+                token: Some(field.type_name.clone()),
+            }));
         }
 
         if field.field_list.range_exclusive().contains(&pos) {
@@ -159,9 +162,10 @@ impl Analyzer {
             // On the field name.
             trace!("Suggestion on a concrete field name");
             match scope {
-                &schema::Type::Object(_) | &schema::Type::Interface(_) => {
+                &schema::Type::Object(ref inner_type)
+                | &schema::Type::Interface(ref inner_type) => {
                     return Ok(Some(Suggestion {
-                        elems: scope.field_names(&field.name.original),
+                        elems: inner_type.field_names(&field.name.original),
                         token: Some(field.name.clone()),
                     }));
                 }
@@ -254,12 +258,15 @@ impl Analyzer {
                         .schema
                         .type_definition(enum_type_name)
                         .ok_or(format!("Enum type {} not found", enum_type_name).into())
-                        .and_then(|enum_type| {
-                            trace!("Suggestion on enum arglist value");
-                            Ok(Some(Suggestion {
-                                elems: enum_type.field_names(&token.original),
-                                token: Some(token.clone()),
-                            }))
+                        .and_then(|ref enum_type| match enum_type {
+                            &schema::Type::Enum(inner_type) => {
+                                trace!("Suggestion on enum arglist value");
+                                Ok(Some(Suggestion {
+                                    elems: inner_type.field_names(&token.original),
+                                    token: Some(token.clone()),
+                                }))
+                            }
+                            _ => Err("Expected enum type".into()),
                         })
                 }
                 _ => {}
@@ -322,12 +329,15 @@ impl Analyzer {
                         .schema
                         .type_definition(enum_type_name)
                         .ok_or(format!("Enum type {} not found", enum_type_name).into())
-                        .and_then(|enum_type| {
-                            trace!("Suggestion on all enum options of an arglist value");
-                            Ok(Some(Suggestion {
-                                elems: enum_type.field_names(""),
-                                token: None,
-                            }))
+                        .and_then(|ref enum_type| match enum_type {
+                            &schema::Type::Enum(inner_type) => {
+                                trace!("Suggestion on all enum options of an arglist value");
+                                Ok(Some(Suggestion {
+                                    elems: inner_type.field_names(""),
+                                    token: None,
+                                }))
+                            }
+                            _ => Err("Expected enum type".into()),
                         })
                 }
                 _ => {}
