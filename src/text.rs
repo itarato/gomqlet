@@ -284,8 +284,9 @@ impl Text {
         match &suggestion.token {
             Some(token) => {
                 let token_start_cursor = self.cursor_of_absolute_position(token.pos);
+                let line_len = self.lines[token_start_cursor.y].len();
                 self.lines[token_start_cursor.y].replace_range(
-                    token_start_cursor.x..token_start_cursor.x + token.len,
+                    token_start_cursor.x..(token_start_cursor.x + token.len).min(line_len),
                     &suggestion.elems[idx].name,
                 );
                 self.cursor.x = token_start_cursor.x + suggestion.elems[idx].name.len();
@@ -301,7 +302,8 @@ impl Text {
         let mut y = 0usize;
         let mut i = 0;
 
-        while i + self.lines[y].len() <= pos {
+        // Using `<` instead of `<=` to avoid end-of-line position (the X coord after the last char, which is out of index [~hidden new line]).
+        while i + self.lines[y].len() < pos {
             i += self.lines[y].len() + 1 /* new line from tokenizer */;
             y += 1;
         }

@@ -28,6 +28,14 @@ pub struct FieldList {
 }
 
 impl FieldList {
+    pub fn new_empty(pos: usize) -> FieldList {
+        FieldList {
+            start_pos: pos,
+            end_pos: pos,
+            fields: vec![],
+        }
+    }
+
     pub fn range_exclusive(&self) -> Range<usize> {
         self.start_pos..self.end_pos
     }

@@ -157,18 +157,31 @@ impl Parser {
             type_name
         } else {
             // Error correction: add empty keyword token to be able to autocomple on.
-            Token::new(
-                TokenKind::Keyword("".to_string()),
-                self.peek_previous_token().unwrap().end_pos(),
-                self.peek_token()
-                    .map(|next_token| next_token.pos)
-                    .unwrap_or(self.peek_previous_token().unwrap().end_pos())
-                    - self.peek_previous_token().unwrap().end_pos(),
-                "".to_string(),
-            )
+            let missing_token_pos = self.peek_previous_token().unwrap().end_pos() + 1; // Leave space for insertion.
+            let have_space = self
+                .peek_token()
+                .map(|next_token| next_token.pos >= missing_token_pos)
+                .unwrap_or(false);
+
+            if have_space {
+                Token::new(
+                    TokenKind::Keyword("".to_string()),
+                    missing_token_pos,
+                    0,
+                    "".to_string(),
+                )
+            } else {
+                return Err(
+                    self.parse_error(ParseErrorScope::Field, "Missing space for union type")
+                );
+            }
         };
 
-        let field_list = self.parse_fields_subobject()?;
+        let field_list = if self.is_next_token_kind(&TokenKind::OpenBrace) {
+            self.parse_fields_subobject()?
+        } else {
+            FieldList::new_empty(type_name.end_pos())
+        };
         let end_pos = field_list.end_pos;
 
         Ok(ast::UnionField {

@@ -158,10 +158,15 @@ impl Analyzer {
         if field.name.range_inclusive().contains(&pos) {
             // On the field name.
             trace!("Suggestion on a concrete field name");
-            return Ok(Some(Suggestion {
-                elems: scope.field_names(&field.name.original),
-                token: Some(field.name.clone()),
-            }));
+            match scope {
+                &schema::Type::Object(_) | &schema::Type::Interface(_) => {
+                    return Ok(Some(Suggestion {
+                        elems: scope.field_names(&field.name.original),
+                        token: Some(field.name.clone()),
+                    }));
+                }
+                _ => return Err("Keyword found in a non object/interface scope".into()),
+            }
         }
 
         if let Some(arglist) = &field.arglist {
