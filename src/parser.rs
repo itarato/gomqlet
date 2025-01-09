@@ -36,11 +36,9 @@ impl Parser {
     }
 
     fn parse_query(&mut self) -> Result<ast::Query, ParseError> {
-        let start_pos = if let Some(token) = self.peek_token() {
-            token.pos
-        } else {
+        if self.peek_token().is_none() {
             return Err(self.parse_error(ParseErrorScope::Query, "Empty query"));
-        };
+        }
 
         if self.is_next_keyword("query") {
             self.ptr += 1;
@@ -48,28 +46,18 @@ impl Parser {
 
         let field_list = self.parse_fields_subobject()?;
 
-        Ok(ast::Query {
-            start_pos,
-            end_pos: field_list.end_pos,
-            field_list,
-        })
+        Ok(ast::Query { field_list })
     }
 
     fn parse_mutation(&mut self) -> Result<ast::Mutation, ParseError> {
         if !self.is_next_keyword("mutation") {
             return Err(self.parse_error(ParseErrorScope::Query, "Empty mutation"));
         }
-        let start_pos = self.peek_token().unwrap().pos;
-
         self.ptr += 1;
 
         let field_list = self.parse_fields_subobject()?;
 
-        Ok(ast::Mutation {
-            start_pos,
-            end_pos: field_list.end_pos,
-            field_list,
-        })
+        Ok(ast::Mutation { field_list })
     }
 
     fn parse_field(&mut self) -> Result<ast::Field, ParseError> {

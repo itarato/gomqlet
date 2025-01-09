@@ -248,26 +248,6 @@ pub struct InputObjectType {
     pub args: ArgList,
 }
 
-impl InputObjectType {
-    pub fn field_names(&self, prefix: &str) -> Vec<SuggestionElem> {
-        self.args
-            .elems
-            .iter()
-            .filter_map(|arg| {
-                if let Some(fuzzy_match_positions) = fuzzy_match(&arg.name, prefix) {
-                    Some(SuggestionElem {
-                        name: arg.name.clone(),
-                        kind: format!("{}", arg.arg_type),
-                        fuzzy_match_positions,
-                    })
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-}
-
 pub struct EnumType {
     name: String,
     elems: Vec<String>,

@@ -9,14 +9,10 @@ pub enum Root {
 
 #[derive(Debug)]
 pub struct Query {
-    pub start_pos: usize,
-    pub end_pos: usize,
     pub field_list: FieldList,
 }
 
 pub struct Mutation {
-    pub start_pos: usize,
-    pub end_pos: usize,
     pub field_list: FieldList,
 }
 
@@ -39,10 +35,6 @@ impl FieldList {
     pub fn range_exclusive(&self) -> Range<usize> {
         self.start_pos..self.end_pos
     }
-
-    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
-        self.start_pos..=self.end_pos
-    }
 }
 
 #[derive(Debug)]
@@ -52,13 +44,6 @@ pub enum Field {
 }
 
 impl Field {
-    pub fn range_exclusive(&self) -> Range<usize> {
-        match self {
-            Field::Concrete(field) => field.start_pos..field.end_pos,
-            Field::Union(field) => field.start_pos..field.end_pos,
-        }
-    }
-
     pub fn range_inclusive(&self) -> RangeInclusive<usize> {
         match self {
             Field::Concrete(field) => field.start_pos..=field.end_pos,
@@ -66,6 +51,7 @@ impl Field {
         }
     }
 
+    #[cfg(test)]
     pub fn as_concrete_field(&self) -> &ConcreteField {
         match &self {
             Field::Concrete(field) => field,
@@ -73,6 +59,7 @@ impl Field {
         }
     }
 
+    #[cfg(test)]
     pub fn as_union_field(&self) -> &UnionField {
         match &self {
             Field::Union(field) => field,
@@ -90,32 +77,12 @@ pub struct ConcreteField {
     pub field_list: Option<FieldList>,
 }
 
-impl ConcreteField {
-    pub fn range_exclusive(&self) -> Range<usize> {
-        self.start_pos..self.end_pos
-    }
-
-    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
-        self.start_pos..=self.end_pos
-    }
-}
-
 #[derive(Debug)]
 pub struct UnionField {
     pub start_pos: usize,
     pub end_pos: usize,
     pub type_name: Token,
     pub field_list: FieldList,
-}
-
-impl UnionField {
-    pub fn range_exclusive(&self) -> Range<usize> {
-        self.start_pos..self.end_pos
-    }
-
-    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
-        self.start_pos..=self.end_pos
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -129,10 +96,6 @@ impl ArgList {
     pub fn range_exclusive(&self) -> Range<usize> {
         self.start_pos..self.end_pos
     }
-
-    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
-        self.start_pos..=self.end_pos
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -141,16 +104,6 @@ pub struct ParamKeyValuePair {
     pub end_pos: usize,
     pub key: Token,
     pub value: ParamValue,
-}
-
-impl ParamKeyValuePair {
-    pub fn range_exclusive(&self) -> Range<usize> {
-        self.start_pos..self.end_pos
-    }
-
-    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
-        self.start_pos..=self.end_pos
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -205,10 +158,6 @@ impl ParamValue {
         }
     }
 
-    pub fn range_exclusive(&self) -> Range<usize> {
-        self.start_pos()..self.end_pos()
-    }
-
     pub fn range_inclusive(&self) -> RangeInclusive<usize> {
         self.start_pos()..=self.end_pos()
     }
@@ -219,14 +168,4 @@ pub struct ListParamValue {
     pub start_pos: usize,
     pub end_pos: usize,
     pub elems: Vec<ParamValue>,
-}
-
-impl ListParamValue {
-    pub fn range_exclusive(&self) -> Range<usize> {
-        self.start_pos..self.end_pos
-    }
-
-    pub fn range_inclusive(&self) -> RangeInclusive<usize> {
-        self.start_pos..=self.end_pos
-    }
 }
