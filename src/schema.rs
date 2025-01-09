@@ -204,6 +204,7 @@ impl Field {
 pub struct ObjectType {
     name: String,
     fields: Vec<Field>,
+    possible_types: Vec<String>,
 }
 
 pub struct InputObjectType {
@@ -245,10 +246,34 @@ impl Type {
                     .map(|field_def| Field::from_json_value(field_def))
                     .collect();
 
-                if kind == "OBJECT" {
-                    Some(Type::Object(ObjectType { name, fields }))
+                let possible_types = if object["possibleTypes"].is_array() {
+                    object["possibleTypes"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|value| {
+                            value.as_object().unwrap()["name"]
+                                .as_str()
+                                .unwrap()
+                                .to_string()
+                        })
+                        .collect()
                 } else {
-                    Some(Type::Interface(ObjectType { name, fields }))
+                    vec![]
+                };
+
+                if kind == "OBJECT" {
+                    Some(Type::Object(ObjectType {
+                        name,
+                        fields,
+                        possible_types,
+                    }))
+                } else {
+                    Some(Type::Interface(ObjectType {
+                        name,
+                        fields,
+                        possible_types,
+                    }))
                 }
             }
             "INPUT_OBJECT" => {
