@@ -11,6 +11,7 @@ pub enum MagicCommand {
     Query(QueryCommand),
     RandomString(usize),
     RandomInteger((i32, i32)),
+    RandomWord,
 }
 
 impl MagicCommand {
@@ -21,6 +22,7 @@ impl MagicCommand {
             "query" => MagicCommand::parse_query(&parts[1..]),
             "random_string" => MagicCommand::parse_random_string(&parts[1..]),
             "random_integer" => MagicCommand::parse_random_integer(&parts[1..]),
+            "random_word" => Ok(MagicCommand::RandomWord),
             _ => Err("Unknown command prefix".into()),
         }
     }
@@ -88,5 +90,11 @@ mod test {
     fn test_random_integer() {
         let mc = MagicCommand::from("random_integer::10::20").unwrap();
         assert_eq!(MagicCommand::RandomInteger((10, 20)), mc);
+    }
+
+    #[test]
+    fn test_random_word() {
+        let mc = MagicCommand::from("random_word").unwrap();
+        assert_eq!(MagicCommand::RandomWord, mc);
     }
 }

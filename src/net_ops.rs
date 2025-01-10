@@ -7,7 +7,7 @@ use crate::{
     config::Config,
     json_path::{JsonPathResult, JsonPathRoot},
     magic_command::MagicCommand,
-    util::{random_integer, random_string},
+    util::{random_integer, random_string, random_word},
 };
 
 const INSPECTION_QUERY: &'static str = "query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { ...FullType } directives { name description locations args { ...InputValue } } }}fragment FullType on __Type { kind name description fields(includeDeprecated: true) { name description args { ...InputValue } type { ...TypeRef } isDeprecated deprecationReason } inputFields { ...InputValue } interfaces { ...TypeRef } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { ...TypeRef }}fragment InputValue on __InputValue { name description type { ...TypeRef } defaultValue}fragment TypeRef on __Type { kind name ofType { kind name ofType { kind name ofType { kind name } } }}";
@@ -81,7 +81,8 @@ impl NetOps {
                             Ok(serde_json::from_reader::<_, Value>(response).unwrap())
                         });
 
-                        if json_response.is_err() {
+                        if let Err(err) = json_response {
+                            error!("Magic query value error: {}", err);
                             continue;
                         }
 
@@ -104,6 +105,7 @@ impl NetOps {
                     Ok(MagicCommand::RandomString(len)) => {
                         format!("\\\"{}\\\"", random_string(len))
                     }
+                    Ok(MagicCommand::RandomWord) => format!("\\\"{}\\\"", random_word()),
                     Err(err) => {
                         error!("Magic value parse error: {}", err);
                         continue;

@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use std::{fs::File, io::Read};
 
 #[derive(Debug, Clone)]
 pub struct CoordUsize {
@@ -62,4 +63,17 @@ pub fn random_string(len: usize) -> String {
         .into_iter()
         .map(|_| (random::<u8>() % (b'z' - b'a' + 1) + b'a') as char)
         .collect()
+}
+
+pub fn random_word() -> String {
+    let mut content = String::new();
+    File::open("./data/words.txt")
+        .unwrap()
+        .read_to_string(&mut content)
+        .expect("Failed reading words file");
+
+    let words = content.lines().map(|s| s.to_string()).collect::<Vec<_>>();
+
+    let len = words.len();
+    words[random::<usize>() % len].clone()
 }
