@@ -32,6 +32,9 @@ pub fn trim_coloured_string_list(elems: Vec<(String, Option<usize>)>, max_len: u
 }
 
 pub fn fuzzy_match(subject: &str, pattern: &str) -> Option<Vec<usize>> {
+    let subject = subject.to_lowercase();
+    let pattern = pattern.to_lowercase();
+
     let pattern_chars = pattern.chars().collect::<Vec<_>>();
     if pattern.is_empty() {
         return Some(vec![]);
