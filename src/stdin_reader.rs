@@ -20,6 +20,17 @@ const ESCAPE_COMBOS: &[(&[u8], KeyboardInput)] = &[
     (&[27, 57], KeyboardInput::AltDigit(9)),
     (&[27, 102], KeyboardInput::AltF),
     (&[27, 115], KeyboardInput::AltS),
+    // MacOS
+    (&[194, 186], KeyboardInput::AltDigit(0)),
+    (&[194, 161], KeyboardInput::AltDigit(1)),
+    (&[226, 132, 162], KeyboardInput::AltDigit(2)),
+    (&[194, 163], KeyboardInput::AltDigit(3)),
+    (&[194, 162], KeyboardInput::AltDigit(4)),
+    (&[226, 136, 158], KeyboardInput::AltDigit(5)),
+    (&[194, 167], KeyboardInput::AltDigit(6)),
+    (&[194, 182], KeyboardInput::AltDigit(7)),
+    (&[226, 128, 162], KeyboardInput::AltDigit(8)),
+    (&[194, 170], KeyboardInput::AltDigit(9)),
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -76,7 +87,9 @@ impl StdinReader {
         trace!("Input: {:?}", &buf[0..len]);
 
         while i < len {
-            if buf[i] == 27 && len > 1 {
+            //                  MacOS option key starters:
+            //                  |----------------------------|
+            if (buf[i] == 27 || buf[i] == 194 || buf[i] == 226) && len > 1 {
                 for (seq, ki) in ESCAPE_COMBOS {
                     if i + seq.len() <= len {
                         if *seq == &buf[i..i + seq.len()] {
