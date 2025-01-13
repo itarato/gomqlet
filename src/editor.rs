@@ -124,6 +124,8 @@ impl Editor {
             parse_error,
             definition_error,
             self.state == State::SuggestionSelect,
+            &self.content.borrow().file_path,
+            self.content.borrow().is_file_saved,
         );
     }
 

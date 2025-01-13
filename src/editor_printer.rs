@@ -1,4 +1,7 @@
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    path::PathBuf,
+};
 
 use crate::{
     analyzer::{Suggestion, SuggestionElem},
@@ -33,6 +36,8 @@ impl EditorPrinter {
         parse_error: Option<ParseError>,
         definition_error: Option<String>,
         suggestion_selection_mode: bool,
+        file_name: &Option<PathBuf>,
+        is_file_saved: bool,
     ) {
         let mut buf: String = String::new();
         TerminalHandler::append_hide_cursor(&mut buf);
@@ -53,6 +58,8 @@ impl EditorPrinter {
         } else if let Some(definition_error) = definition_error {
             self.print_analyzer_result_definition_error(&mut buf, definition_error);
         }
+
+        self.print_title_bar(&mut buf, file_name, is_file_saved);
 
         TerminalHandler::append_cursor_location(&mut buf, cursor.x, cursor.y - self.vscroll);
         TerminalHandler::append_show_cursor(&mut buf);
@@ -76,7 +83,7 @@ impl EditorPrinter {
 
         let lines = output.lines().collect::<Vec<_>>();
 
-        let last_line_index = lines.len().min(self.terminal_height() + self.vscroll);
+        let last_line_index = lines.len().min(self.editor_area_height() + self.vscroll);
         for i in self.vscroll..last_line_index {
             if i > self.vscroll {
                 buf.push_str("\n\r");
@@ -91,8 +98,8 @@ impl EditorPrinter {
 
         if global_cursor_y < 0 {
             self.vscroll = (self.vscroll as i32 + global_cursor_y) as usize;
-        } else if global_cursor_y >= self.terminal_height() as i32 {
-            self.vscroll += global_cursor_y as usize - self.terminal_height() + 1;
+        } else if global_cursor_y >= self.editor_area_height() as i32 {
+            self.vscroll += global_cursor_y as usize - self.editor_area_height() + 1;
         }
     }
 
@@ -111,8 +118,8 @@ impl EditorPrinter {
                 i,
             );
 
-            if i == self.terminal_height() - 1 {
-                buf.push_str(&format!("... {} more", suggestions.elems.len() - i));
+            if i == self.editor_area_height() - 1 {
+                buf.push_str(&format!("... {} more", suggestions.elems.len() - i + 1));
                 break;
             }
 
@@ -213,7 +220,7 @@ impl EditorPrinter {
             TerminalHandler::append_cursor_location(
                 buf,
                 0,
-                self.terminal_height() - lines.len() + i,
+                self.editor_area_height() - lines.len() + i,
             );
 
             if i == 0 {
@@ -224,6 +231,26 @@ impl EditorPrinter {
             buf.push_str(&lines[i]);
             buf.push_str("\x1B[0m");
         }
+    }
+
+    fn print_title_bar(&self, buf: &mut String, file_name: &Option<PathBuf>, is_file_save: bool) {
+        TerminalHandler::append_cursor_location(buf, 0, self.editor_area_height() + 1);
+
+        let text = format!(
+            " GomQLet | {} {}",
+            file_name
+                .as_ref()
+                .map(|path| path.to_str().unwrap())
+                .unwrap_or("unsaved file"),
+            if is_file_save { "" } else { "[not saved]" }
+        );
+        let title_bar = format!(
+            "\x1B[7m{: <width$}\x1B[0m",
+            &text[0..self.terminal_width().min(text.len())],
+            width = self.terminal_width()
+        );
+
+        buf.push_str(&title_bar);
     }
 
     fn colorize(&self, tokens: Vec<Token>) -> String {
@@ -251,7 +278,7 @@ impl EditorPrinter {
         self.terminal_dimension.0
     }
 
-    fn terminal_height(&self) -> usize {
-        self.terminal_dimension.1
+    fn editor_area_height(&self) -> usize {
+        self.terminal_dimension.1 - 1
     }
 }

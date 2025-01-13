@@ -18,6 +18,7 @@ pub struct Text {
     pub lines: Vec<String>,
     pub cursor: CoordUsize,
     pub file_path: Option<PathBuf>,
+    pub is_file_saved: bool,
 }
 
 impl Text {
@@ -38,6 +39,7 @@ impl Text {
             lines,
             cursor: CoordUsize { x: 0, y: 0 },
             file_path,
+            is_file_saved: true,
         }
     }
 
@@ -54,7 +56,8 @@ impl Text {
         }
 
         self.cursor = CoordUsize { x: 0, y: 0 };
-        self.file_path = Some(path)
+        self.file_path = Some(path);
+        self.is_file_saved = true;
     }
 
     pub fn to_string(&self) -> String {
@@ -70,6 +73,8 @@ impl Text {
             .expect("Failed opening file to save.");
         file.write_all(self.to_string().as_bytes())
             .expect("Failed writing to file");
+
+        self.is_file_saved = true;
 
         info!("File has been saved to {:?}", self.file_path);
     }
@@ -89,6 +94,8 @@ impl Text {
 
         self.cursor.x = new_line_spaces_len;
         self.cursor.y += 1;
+
+        self.is_file_saved = false;
     }
 
     pub fn insert_visible_char(&mut self, ch: char) {
@@ -117,6 +124,8 @@ impl Text {
                 .expect("Missing line")
                 .insert(self.cursor.x, opposite);
         }
+
+        self.is_file_saved = false;
     }
 
     pub fn insert_tab(&mut self) {
@@ -124,6 +133,8 @@ impl Text {
         for _ in 0..remaining_spaces {
             self.insert_visible_char(' ');
         }
+
+        self.is_file_saved = false;
     }
 
     pub fn backspace(&mut self) {
@@ -150,6 +161,8 @@ impl Text {
                 // Noop.
             }
         }
+
+        self.is_file_saved = false;
     }
 
     pub fn delete_word(&mut self) {
@@ -184,6 +197,30 @@ impl Text {
             i -= 1;
             self.cursor.x -= 1;
         }
+
+        self.is_file_saved = false;
+    }
+
+    pub fn delete(&mut self) {
+        if self.cursor.x < self.lines[self.cursor.y].len() {
+            self.lines
+                .get_mut(self.cursor.y)
+                .expect("Missing line")
+                .remove(self.cursor.x);
+        } else {
+            if self.cursor.y < self.lines.len() - 1 {
+                let next_line_content = self.lines[self.cursor.y + 1].clone();
+                self.lines
+                    .get_mut(self.cursor.y)
+                    .expect("Missing line")
+                    .push_str(&next_line_content);
+                self.lines.remove(self.cursor.y + 1);
+            } else {
+                // Noop.
+            }
+        }
+
+        self.is_file_saved = false;
     }
 
     pub fn move_cursor_left(&mut self) {
@@ -232,26 +269,6 @@ impl Text {
         self.cursor.x = self.lines[self.cursor.y].len();
     }
 
-    pub fn delete(&mut self) {
-        if self.cursor.x < self.lines[self.cursor.y].len() {
-            self.lines
-                .get_mut(self.cursor.y)
-                .expect("Missing line")
-                .remove(self.cursor.x);
-        } else {
-            if self.cursor.y < self.lines.len() - 1 {
-                let next_line_content = self.lines[self.cursor.y + 1].clone();
-                self.lines
-                    .get_mut(self.cursor.y)
-                    .expect("Missing line")
-                    .push_str(&next_line_content);
-                self.lines.remove(self.cursor.y + 1);
-            } else {
-                // Noop.
-            }
-        }
-    }
-
     pub fn new_line_adjusted_cursor_position(&self) -> usize {
         let mut pos = 0usize;
 
@@ -296,6 +313,8 @@ impl Text {
                 self.cursor.x += suggestion.elems[idx].name.len();
             }
         };
+
+        self.is_file_saved = false;
     }
 
     fn cursor_of_absolute_position(&self, pos: usize) -> CoordUsize {
