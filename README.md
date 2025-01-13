@@ -27,11 +27,11 @@ cargo run -- -h
 
 ### Bindings
 
-- `CTRL-O` and then `DIGIT` / `ALT-<DIGIT>`: apply suggestion
+- `CTRL-O` and then `DIGIT` / `ALT-<DIGIT>` / `OPTION-<DIGIT>`: apply suggestion
 - `CTRL-G`: execute query
 - `CTRL-C` / `CTRL-D`: quit application
 - `ALT-F` / `CTRL-F`: file browser
-- `ALT-S`: save file
+- `ALT-S` / `CTRL-S`: save file
 
 
 ### Magic tokens
@@ -53,26 +53,6 @@ Only `.graphql` file types (text/plain) can be opened.
 
 ## Todo
 
-Bug:
-
--
-
-Generic:
-
-- MacOS keyboard combos
-
-Editor:
-
--
-
-Tokenizier:
-
-- 
-
-Parsing:
-
-- 
-
 Analysis:
 
 - only offer not yet added fields
@@ -80,16 +60,3 @@ Analysis:
     - arg requirement
     - fieldset
     - fieldset emptiness
-- offering field from various implementation of concrete types
-
-File browser:
-
-- 
-
-GraphQL:
-
--
-
-Docs:
-
-- 
