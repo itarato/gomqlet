@@ -53,10 +53,9 @@ Only `.graphql` file types (text/plain) can be opened.
 
 ## Todo
 
-Analysis:
-
+- variables from config
 - only offer not yet added fields
-- validation:
+- query validation:
     - arg requirement
     - fieldset
     - fieldset emptiness
