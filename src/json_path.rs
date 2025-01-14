@@ -8,8 +8,9 @@ pub enum JsonNest {
     Key(String),
 }
 
+#[derive(Debug, PartialEq)]
 pub struct JsonPathRoot {
-    nest: Vec<JsonNest>,
+    pub nest: Vec<JsonNest>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -23,7 +24,7 @@ impl JsonPathRoot {
         let chars = raw.chars().collect::<Vec<_>>();
 
         if chars[0] != '$' {
-            return Err("".into());
+            return Err("Invalid json path: missing root declaration".into());
         }
 
         Ok(JsonPathRoot {
@@ -44,7 +45,7 @@ impl JsonPathRoot {
                         break;
                     }
 
-                    if !chars[i].is_ascii_alphabetic() {
+                    if !(chars[i].is_ascii_alphabetic() || chars[i] == '_') {
                         break;
                     }
 
@@ -113,17 +114,15 @@ impl JsonPathRoot {
                     if !value.is_object() {
                         Err(format!("Expected object, got: {:?}", value).into())
                     } else {
-                        JsonPathRoot::walk_nesting(
-                            &value
-                                .as_object()
-                                .expect("Walk error -> not an object")
-                                .get(key)
-                                .expect(&format!(
-                                    "Walk error -> no value for key '{}' in {:?}",
-                                    key, value
-                                )),
-                            &nest[1..],
-                        )
+                        let v = value
+                            .as_object()
+                            .ok_or("Walk error -> not an object".to_string())?
+                            .get(key)
+                            .ok_or(format!(
+                                "Walk error -> no value for key '{}' in {:?}",
+                                key, value
+                            ))?;
+                        JsonPathRoot::walk_nesting(v, &nest[1..])
                     }
                 }
                 JsonNest::Index(index) => {
@@ -131,14 +130,14 @@ impl JsonPathRoot {
                         Err(format!("Expected list, got: {:?}", value).into())
                     } else {
                         JsonPathRoot::walk_nesting(
-                            &value
+                            value
                                 .as_array()
-                                .expect("Walk erro -> not an array")
+                                .ok_or("Walk erro -> not an array".to_string())?
                                 .get(*index)
-                                .expect(&format!(
+                                .ok_or(format!(
                                     "Walk error -> no value for index '{}' in {:?}",
                                     index, value
-                                )),
+                                ))?,
                             &nest[1..],
                         )
                     }

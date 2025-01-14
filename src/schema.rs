@@ -459,7 +459,7 @@ impl Schema {
         if reload_schema
             || !fs::exists(schema_cache_file_path).expect("Failed checking schema cache file")
         {
-            let response_body = net_ops.fetch_live_schema();
+            let response_body = net_ops.fetch_live_schema().unwrap();
 
             let mut cache =
                 File::create(schema_cache_file_path).expect("Failed creating schema cache");

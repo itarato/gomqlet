@@ -1,5 +1,5 @@
 use rand::prelude::*;
-use std::{fs::File, io::Read};
+use std::{fmt::Display, fs::File, io::Read};
 
 #[derive(Debug, Clone)]
 pub struct CoordUsize {
@@ -79,4 +79,8 @@ pub fn random_word() -> String {
 
     let len = words.len();
     words[random::<usize>() % len].clone()
+}
+
+pub fn err_ctx<E: Display>(context: &str) -> impl FnOnce(E) -> Error + use<'_, E> {
+    move |err| format!("{} (caused by: {})", context, err).into()
 }

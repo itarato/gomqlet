@@ -1,4 +1,4 @@
-use crate::util::Error;
+use crate::{json_path::JsonPathRoot, util::Error};
 
 #[derive(Debug, PartialEq)]
 pub struct QueryCommand {
@@ -12,6 +12,7 @@ pub enum MagicCommand {
     RandomString(usize),
     RandomInteger((i32, i32)),
     RandomWord,
+    Variable(JsonPathRoot),
 }
 
 impl MagicCommand {
@@ -23,6 +24,7 @@ impl MagicCommand {
             "random_string" => MagicCommand::parse_random_string(&parts[1..]),
             "random_integer" => MagicCommand::parse_random_integer(&parts[1..]),
             "random_word" => Ok(MagicCommand::RandomWord),
+            "variable" => MagicCommand::parse_variable(&parts[1..]),
             _ => Err("Unknown command prefix".into()),
         }
     }
@@ -60,11 +62,22 @@ impl MagicCommand {
             i32::from_str_radix(parts[1], 10)?,
         )))
     }
+
+    fn parse_variable(parts: &[&str]) -> Result<MagicCommand, Error> {
+        if parts.len() != 1 {
+            return Err("Variable magic value declaration must have 1 argument: json path".into());
+        }
+
+        JsonPathRoot::from(parts[0]).map(|json_path_root| MagicCommand::Variable(json_path_root))
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::magic_command::QueryCommand;
+    use crate::{
+        json_path::{JsonNest, JsonPathRoot},
+        magic_command::QueryCommand,
+    };
 
     use super::MagicCommand;
 
@@ -96,5 +109,16 @@ mod test {
     fn test_random_word() {
         let mc = MagicCommand::from("random_word").unwrap();
         assert_eq!(MagicCommand::RandomWord, mc);
+    }
+
+    #[test]
+    fn test_random_variable() {
+        let mc = MagicCommand::from("variable::$.foo").unwrap();
+        assert_eq!(
+            MagicCommand::Variable(JsonPathRoot {
+                nest: vec![JsonNest::Key("foo".to_string())]
+            }),
+            mc
+        );
     }
 }
