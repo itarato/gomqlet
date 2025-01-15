@@ -14,5 +14,9 @@
             "<ACCESS_TOKEN>"
         ]
     ],
-    "schema_cache": "<SCHEMA_CACHE_PATH>"
+    "schema_cache": "<SCHEMA_CACHE_PATH>",
+    "variables": {
+        "user_id": "<SOME_GID>",
+        "list_size": 100
+    }
 }

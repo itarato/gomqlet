@@ -44,7 +44,7 @@ Types:
 - Random string: `random_string::LENGTH` (example: `<random_string::10>`)
 - Random integer: `random_integer::MIN::MAX` (example: `<random_integer::0::100>`)
 - Random word: `random_word` (example: `<random_word>`)
-
+- Variable (defined in *.config.json): `variable::JSON_PATH` (example: `<variable::$.user_query.tags[0]>`)
 
 ### File browser
 
@@ -53,7 +53,6 @@ Only `.graphql` file types (text/plain) can be opened.
 
 ## Todo
 
-- variables from config
 - only offer not yet added fields
 - query validation:
     - arg requirement
