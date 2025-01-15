@@ -330,3 +330,26 @@ impl Text {
         CoordUsize { x: pos - i, y }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::Text;
+
+    #[test]
+    fn test_minimal_flow() {
+        let mut text = Text::new(None);
+
+        assert_eq!(vec![""], text.lines);
+
+        text.insert_visible_char('a');
+        text.insert_visible_char('b');
+        text.insert_visible_char('c');
+
+        assert_eq!(vec!["abc"], text.lines);
+
+        text.move_cursor_left();
+        text.insert_visible_char('d');
+
+        assert_eq!(vec!["abdc"], text.lines);
+    }
+}
