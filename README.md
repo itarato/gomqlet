@@ -60,3 +60,5 @@ Only `.graphql` file types (text/plain) can be opened.
     - fieldset emptiness
 - show parse error position
 - input nested with non nul is not unwrapped - complains that input object type is expected
+- `_` for keyword start
+- numbers for keywords (not start)
