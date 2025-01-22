@@ -62,3 +62,5 @@ Only `.graphql` file types (text/plain) can be opened.
 - input nested with non nul is not unwrapped - complains that input object type is expected
 - `_` for keyword start
 - numbers for keywords (not start)
+- increase query time limit
+- offer variable preview
