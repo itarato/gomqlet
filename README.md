@@ -63,4 +63,9 @@ Only `.graphql` file types (text/plain) can be opened.
 - `_` for keyword start
 - numbers for keywords (not start)
 - increase query time limit
+
+ DEBUG reqwest::connect > starting new connection: https://...
+thread 'main' panicked at src/net_ops.rs:62:38:
+called `Result::unwrap()` on an `Err` value: reqwest::Error { kind: Request, url: "https://.../graphql.json", source: TimedOut }
+
 - offer variable preview
