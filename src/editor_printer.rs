@@ -7,7 +7,7 @@ use crate::{
     analyzer::{Suggestion, SuggestionElem},
     parser::ParseError,
     terminal_handler::TerminalHandler,
-    tokenizer::{Token, TokenKind},
+    tokenizer::{self, Token, TokenKind},
     util::{trim_coloured_string_list, CoordUsize},
 };
 
@@ -43,7 +43,12 @@ impl EditorPrinter {
         TerminalHandler::append_hide_cursor(&mut buf);
         TerminalHandler::append_clear_screen(&mut buf);
 
-        self.print_tokens(&mut buf, tokens, cursor.y);
+        self.print_tokens(
+            &mut buf,
+            tokens,
+            cursor.y,
+            &parse_error.as_ref().and_then(|pe| pe.token.as_ref()),
+        );
 
         if let Some(suggestions) = suggestions {
             self.print_analyzer_result_suggestions(
@@ -75,11 +80,17 @@ impl EditorPrinter {
         self.terminal_dimension = term_size::dimensions().unwrap();
     }
 
-    fn print_tokens(&mut self, buf: &mut String, tokens: Vec<Token>, cursor_y: usize) {
+    fn print_tokens(
+        &mut self,
+        buf: &mut String,
+        tokens: Vec<Token>,
+        cursor_y: usize,
+        parse_error_token: &Option<&Token>,
+    ) {
         TerminalHandler::append_cursor_location(buf, 0, 0);
 
         self.resolve_vscroll(cursor_y);
-        let output = self.colorize(tokens);
+        let output = self.colorize(tokens, parse_error_token);
 
         let lines = output.lines().collect::<Vec<_>>();
 
@@ -253,23 +264,37 @@ impl EditorPrinter {
         buf.push_str(&title_bar);
     }
 
-    fn colorize(&self, tokens: Vec<Token>) -> String {
+    fn colorize(&self, tokens: Vec<Token>, parse_error_token: &Option<&Token>) -> String {
         tokens
             .into_iter()
-            .map(|token| match token.kind {
-                TokenKind::LineBreak => "\r\n".into(),
-                TokenKind::Invalid(_) => {
+            .map(|token| {
+                let is_error_token = parse_error_token
+                    .map(|error_token| error_token == &token)
+                    .unwrap_or(false);
+
+                if is_error_token {
                     format!(
                         "\x1B[{}m\x1B[4m{}\x1B[0m",
-                        token.kind.vt100_color_code(),
+                        tokenizer::COLOR_INVALID,
                         token.original
                     )
+                } else {
+                    match token.kind {
+                        TokenKind::LineBreak => "\r\n".into(),
+                        TokenKind::Invalid(_) => {
+                            format!(
+                                "\x1B[{}m\x1B[4m{}\x1B[0m",
+                                token.kind.vt100_color_code(),
+                                token.original
+                            )
+                        }
+                        _ => format!(
+                            "\x1B[{}m{}\x1B[0m",
+                            token.kind.vt100_color_code(),
+                            token.original
+                        ),
+                    }
                 }
-                _ => format!(
-                    "\x1B[{}m{}\x1B[0m",
-                    token.kind.vt100_color_code(),
-                    token.original
-                ),
             })
             .collect::<String>()
     }

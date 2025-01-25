@@ -58,6 +58,6 @@ Only `.graphql` file types (text/plain) can be opened.
     - arg requirement
     - fieldset
     - fieldset emptiness
-- show parse error position
+- show analyzer error position
 - input nested with non nul is not unwrapped - complains that input object type is expected
 - offer variable preview

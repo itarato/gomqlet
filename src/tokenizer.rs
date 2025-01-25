@@ -1,5 +1,7 @@
 use std::ops::RangeInclusive;
 
+pub const COLOR_INVALID: u8 = 91;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
@@ -57,7 +59,7 @@ impl TokenKind {
             TokenKind::Keyword(_) => 93,
             TokenKind::Number(_) => 95,
             TokenKind::Str(_) => 94,
-            TokenKind::Invalid(_) => 91,
+            TokenKind::Invalid(_) => COLOR_INVALID,
             TokenKind::MagicValue(_) => 44,
             _ => 0,
         }

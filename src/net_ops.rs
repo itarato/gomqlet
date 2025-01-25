@@ -83,9 +83,15 @@ impl NetOps {
 
         for captures in matches.iter().rev() {
             if let Some(re_match) = captures.iter().nth(1).unwrap() {
-                let replacement = match MagicCommand::from(re_match.as_str())
-                    .map_err(err_ctx("Failed magic value interpretation"))?
-                {
+                let magic_command = MagicCommand::from(re_match.as_str())
+                    .map_err(err_ctx("Failed magic value interpretation"))?;
+
+                debug!(
+                    "\x1B[95mReplacing magic command: \x1B[92m{:?}\x1B[0m",
+                    &magic_command
+                );
+
+                let replacement = match magic_command {
                     MagicCommand::Query(query_command) => {
                         let json_response = File::open(&query_command.file)
                             .map_err(|io_error| {
@@ -121,6 +127,8 @@ impl NetOps {
                         .and_then(|variables: _| json_path_root.extract(&variables))
                         .map(|result| NetOps::insertable_snippet_from_json_path_result(result))?,
                 };
+
+                debug!("\x1B[95mReplacement: \x1B[92m{}\x1B[0m", replacement);
 
                 out.replace_range(
                     re_match.range().start - 1..re_match.range().end + 1,
