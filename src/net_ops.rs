@@ -1,7 +1,7 @@
 use regex::Regex;
 use reqwest::blocking::Response;
 use serde_json::Value;
-use std::{fs::File, io::Read};
+use std::{fs::File, io::Read, time::Duration};
 
 use crate::{
     config::Config,
@@ -44,7 +44,7 @@ impl NetOps {
     }
 
     fn raw_execute_graphql_operation(&self, query: &str) -> Result<Response, Error> {
-        let mut request = self.client.post(&self.url);
+        let mut request = self.client.post(&self.url).timeout(Duration::from_secs(120));
 
         for [key, value] in &self.headers {
             request = request.header(key, value);
