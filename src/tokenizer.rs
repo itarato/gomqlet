@@ -124,7 +124,9 @@ impl Tokenizer {
                         pos += 1;
                     }
                 }
-                'a'..='z' | 'A'..='Z' => tokens.push(Tokenizer::consume_keyword(&chars, &mut pos)),
+                'a'..='z' | 'A'..='Z' | '_' => {
+                    tokens.push(Tokenizer::consume_keyword(&chars, &mut pos))
+                }
                 '0'..='9' | '-' => tokens.push(Tokenizer::consume_number(&chars, &mut pos)),
                 '"' => tokens.push(Tokenizer::consume_string(&chars, &mut pos)),
                 '<' => tokens.push(Tokenizer::consume_magic_value(&chars, &mut pos)),
@@ -173,7 +175,7 @@ impl Tokenizer {
         let mut fragment = String::new();
 
         while *pos < chars.len() {
-            if !chars[*pos].is_ascii_alphabetic() && chars[*pos] != '_' {
+            if !chars[*pos].is_ascii_alphanumeric() && chars[*pos] != '_' {
                 break;
             }
 

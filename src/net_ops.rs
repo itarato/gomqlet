@@ -11,6 +11,7 @@ use crate::{
 };
 
 const INSPECTION_QUERY: &'static str = "query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { ...FullType } directives { name description locations args { ...InputValue } } }}fragment FullType on __Type { kind name description fields(includeDeprecated: true) { name description args { ...InputValue } type { ...TypeRef } isDeprecated deprecationReason } inputFields { ...InputValue } interfaces { ...TypeRef } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { ...TypeRef }}fragment InputValue on __InputValue { name description type { ...TypeRef } defaultValue}fragment TypeRef on __Type { kind name ofType { kind name ofType { kind name ofType { kind name } } }}";
+const TIMEOUT_SECONDS: u64 = 120;
 
 pub struct NetOps {
     client: reqwest::blocking::Client,
@@ -44,7 +45,10 @@ impl NetOps {
     }
 
     fn raw_execute_graphql_operation(&self, query: &str) -> Result<Response, Error> {
-        let mut request = self.client.post(&self.url).timeout(Duration::from_secs(120));
+        let mut request = self
+            .client
+            .post(&self.url)
+            .timeout(Duration::from_secs(TIMEOUT_SECONDS));
 
         for [key, value] in &self.headers {
             request = request.header(key, value);
