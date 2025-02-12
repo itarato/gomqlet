@@ -115,7 +115,6 @@ impl Text {
             '[' => Some(']'),
             '(' => Some(')'),
             '{' => Some('}'),
-            '"' => Some('"'),
             _ => None,
         };
         if let Some(opposite) = opposite {
@@ -168,6 +167,7 @@ impl Text {
     pub fn delete_word(&mut self) {
         let mut i = self.cursor.x as i32 - 1;
         if i < 0 {
+            self.backspace();
             return;
         }
 

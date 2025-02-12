@@ -39,12 +39,14 @@ impl NetOps {
                 return;
             }
         };
-        
-        let _ = serde_json::from_reader(response).map(|json: Value| {
-            info!("\x1B[95mResponse: \x1B[93m{:#?}\x1B[0m", json);
-        }).map_err(|e| {
-            error!("Failed to deserialize JSON respone: {}", e);
-        });
+
+        let _ = serde_json::from_reader(response)
+            .map(|json: Value| {
+                info!("\x1B[95mResponse: \x1B[93m{:#?}\x1B[0m", json);
+            })
+            .map_err(|e| {
+                error!("Failed to deserialize JSON respone: {}", e);
+            });
     }
 
     fn raw_execute_graphql_operation(&self, query: &str) -> Result<Response, Error> {
