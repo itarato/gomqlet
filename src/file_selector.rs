@@ -137,7 +137,7 @@ impl FileSelector {
     }
 
     fn files(folder: &PathBuf) -> Vec<PathBuf> {
-        fs::read_dir(folder)
+        let mut paths_unsorted: Vec<_> = fs::read_dir(folder)
             .expect("Cannot read source folder")
             .filter_map(|dir_entry_result| dir_entry_result.ok())
             .map(|dir_entry| dir_entry.path())
@@ -148,6 +148,10 @@ impl FileSelector {
                         .map(|ext| ext == "graphql")
                         .unwrap_or(false)
             })
-            .collect()
+            .collect();
+
+        paths_unsorted.sort();
+
+        paths_unsorted
     }
 }
