@@ -94,6 +94,7 @@ impl Editor {
             .filter(|token| match token.kind {
                 TokenKind::Whitespace(_) => false,
                 TokenKind::LineBreak => false,
+                TokenKind::Comment => false,
                 _ => true,
             })
             .collect::<Vec<_>>();

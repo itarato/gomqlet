@@ -48,6 +48,7 @@ pub enum TokenKind {
     Whitespace(String),
     Invalid(String),
     MagicValue(String),
+    Comment,
 }
 
 impl TokenKind {
@@ -61,6 +62,7 @@ impl TokenKind {
             TokenKind::Str(_) => 94,
             TokenKind::Invalid(_) => COLOR_INVALID,
             TokenKind::MagicValue(_) => 44,
+            TokenKind::Comment => 90,
             _ => 0,
         }
     }
@@ -133,6 +135,17 @@ impl Tokenizer {
                 '"' => tokens.push(Tokenizer::consume_string(&chars, &mut pos)),
                 '<' => tokens.push(Tokenizer::consume_magic_value(&chars, &mut pos)),
                 '.' => tokens.push(Tokenizer::consume_ellipsis(&chars, &mut pos)),
+                '/' => match Tokenizer::consume_comment(&chars, &mut pos) {
+                    token @ Token {
+                        kind: TokenKind::Comment,
+                        ..
+                    } => {
+                        if record_whitespace {
+                            tokens.push(token);
+                        }
+                    }
+                    token @ _ => tokens.push(token),
+                },
                 _ => {
                     tokens.push(Token::new(
                         TokenKind::Invalid("Invalid character".into()),
@@ -170,7 +183,39 @@ impl Tokenizer {
         }
 
         *pos += 3;
-        return Token::new(TokenKind::Ellipsis, *pos - 3, 3, "...".to_string());
+        Token::new(TokenKind::Ellipsis, *pos - 3, 3, "...".to_string())
+    }
+
+    fn consume_comment(chars: &Vec<char>, pos: &mut usize) -> Token {
+        let pos_orig = *pos;
+
+        if chars.len() < *pos + 2 || chars[*pos] != '/' || chars[*pos + 1] != '/' {
+            *pos += 1;
+            return Token::new(
+                TokenKind::Invalid("Invalid comment start".to_string()),
+                *pos - 1,
+                1,
+                chars[*pos].to_string(),
+            );
+        }
+
+        loop {
+            if *pos >= chars.len() {
+                break;
+            }
+            if chars[*pos] == '\n' {
+                break;
+            }
+
+            *pos += 1;
+        }
+
+        Token::new(
+            TokenKind::Comment,
+            pos_orig,
+            *pos - pos_orig,
+            chars[pos_orig..*pos].iter().cloned().collect(),
+        )
     }
 
     fn consume_keyword(chars: &Vec<char>, pos: &mut usize) -> Token {
@@ -502,5 +547,20 @@ mod test {
         let tokens = Tokenizer::tokenize("... on {}", false);
         assert_eq!(4, tokens.len());
         assert_eq!(TokenKind::Ellipsis, tokens[0].kind);
+    }
+
+    #[test]
+    fn test_comment() {
+        let tokens = Tokenizer::tokenize("foo\n// comment\nbar", true);
+        assert_eq!(5, tokens.len());
+        assert_eq!(TokenKind::Comment, tokens[2].kind);
+    }
+
+    #[test]
+    fn test_comment_is_skipped_when_no_whitespace() {
+        let tokens = Tokenizer::tokenize("foo\n// comment\nbar", false);
+        assert_eq!(2, tokens.len());
+        assert_eq!(TokenKind::Keyword("foo".to_string()), tokens[0].kind);
+        assert_eq!(TokenKind::Keyword("bar".to_string()), tokens[1].kind);
     }
 }

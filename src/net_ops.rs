@@ -59,9 +59,13 @@ impl NetOps {
             request = request.header(key, value);
         }
 
+        let query = self.remove_comments(query);
+        let query = &self.remove_new_lines(query);
+
         let query = self
             .replace_magic_values(query)
             .map_err(err_ctx("Failed query execution"))?;
+
         let body = format!("{{ \"query\": \"{}\" }}", query);
 
         debug!("\x1B[95mBody: \x1B[94m{}\x1B[0m", &body);
@@ -78,6 +82,15 @@ impl NetOps {
         response.read_to_string(&mut response_body).unwrap();
 
         Ok(response_body)
+    }
+
+    fn remove_comments(&self, subject: &str) -> String {
+        let re = Regex::new(r"//.*").unwrap();
+        re.replace_all(&subject, "").into()
+    }
+
+    pub fn remove_new_lines(&self, subject: String) -> String {
+        subject.replace('\n', "")
     }
 
     fn replace_magic_values(&self, subject: &str) -> Result<String, Error> {
@@ -105,9 +118,6 @@ impl NetOps {
                             .and_then(|mut file| {
                                 let mut buf = String::new();
                                 file.read_to_string(&mut buf)?;
-
-                                let buf = buf.replace('\n', "");
-
                                 self.raw_execute_graphql_operation(&buf)
                             })
                             .and_then(|response| {

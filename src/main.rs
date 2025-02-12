@@ -5,6 +5,7 @@ use command_line_params::CommandLineParams;
 use editor::Editor;
 use file_selector::FileSelector;
 use net_ops::NetOps;
+use regex::Regex;
 use stdin_reader::{KeyboardInput, StdinReader};
 use terminal_handler::TerminalHandler;
 use text::Text;
@@ -95,7 +96,7 @@ impl Gomqlet {
                 } else if cmd == KeyboardInput::CtrlG {
                     // CTRL-G
                     self.net_ops
-                        .execute_graphql_operation(&self.content.borrow().to_string_no_new_lines());
+                        .execute_graphql_operation(&self.content.borrow().lines.join("\n"));
                 } else if cmd == KeyboardInput::AltF || cmd == KeyboardInput::CtrlF {
                     self.state = State::FileSelector;
                     self.file_selector.refresh_screen();
