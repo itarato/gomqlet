@@ -195,7 +195,7 @@ impl Tokenizer {
                 TokenKind::Invalid("Invalid comment start".to_string()),
                 *pos - 1,
                 1,
-                chars[*pos].to_string(),
+                chars[*pos - 1].to_string(),
             );
         }
 
