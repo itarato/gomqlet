@@ -46,6 +46,7 @@ pub enum KeyboardInput {
     CtrlR,
     CtrlG,
     CtrlO,
+    CtrlSlash,
 
     AltDigit(u8),
     AltF,
@@ -140,6 +141,9 @@ impl StdinReader {
                 i += 1;
             } else if buf[i] == 27 {
                 out.push(KeyboardInput::Escape);
+                i += 1;
+            } else if buf[i] == 31 {
+                out.push(KeyboardInput::CtrlSlash);
                 i += 1;
             } else if buf[i] == 127 {
                 out.push(KeyboardInput::Backspace);

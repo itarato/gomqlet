@@ -219,6 +219,14 @@ impl Text {
         self.is_file_saved = false;
     }
 
+    pub fn toggle_comment(&mut self) {
+        if self.has_comment_on_current_line() {
+            self.lines[self.cursor.y] = self.lines[self.cursor.y][2..].into()
+        } else {
+            self.lines[self.cursor.y].insert_str(0, "//");
+        }
+    }
+
     pub fn move_cursor_left(&mut self) {
         if self.cursor.x > 0 {
             self.cursor.x -= 1;
@@ -324,6 +332,14 @@ impl Text {
         }
 
         CoordUsize { x: pos - i, y }
+    }
+
+    fn has_comment_on_current_line(&self) -> bool {
+        if self.lines[self.cursor.y].len() < 2 {
+            return false;
+        }
+
+        &self.lines[self.cursor.y][0..=1] == "//"
     }
 }
 

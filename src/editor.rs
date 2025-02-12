@@ -72,6 +72,7 @@ impl Editor {
             KeyboardInput::Enter => self.content.borrow_mut().insert_new_line(),
             KeyboardInput::Backspace => self.content.borrow_mut().backspace(),
             KeyboardInput::Tab => self.content.borrow_mut().insert_tab(),
+            KeyboardInput::CtrlSlash => self.content.borrow_mut().toggle_comment(),
             KeyboardInput::AltDigit(digit) => {
                 self.content
                     .borrow_mut()
