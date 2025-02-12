@@ -5,7 +5,6 @@ use command_line_params::CommandLineParams;
 use editor::Editor;
 use file_selector::FileSelector;
 use net_ops::NetOps;
-use regex::Regex;
 use stdin_reader::{KeyboardInput, StdinReader};
 use terminal_handler::TerminalHandler;
 use text::Text;
