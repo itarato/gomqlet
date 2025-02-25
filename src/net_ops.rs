@@ -85,7 +85,7 @@ impl NetOps {
     }
 
     fn remove_comments(&self, subject: &str) -> String {
-        let re = Regex::new(r"//.*").unwrap();
+        let re = Regex::new(r"^//.*").unwrap();
         re.replace_all(&subject, "").into()
     }
 
