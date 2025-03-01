@@ -3,3 +3,4 @@ misc/*.json
 *.config.json
 *.graphql
 queries
+.idea
